@@ -126,7 +126,6 @@ Optional:
 
 ```bash
 $ tree -L 2
-```
 > .
 > ├── bin/
 > │   ├── ld-accept
@@ -158,6 +157,7 @@ $ tree -L 2
 > ├── README.md
 > ├── whitelist-ips/
 > └── whitelist-networks/
+```
 
 Type the name of any file in bin/ with --help or -h and hit return to get a short description of what it does, parameters it accepts and examples.
 
