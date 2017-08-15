@@ -183,37 +183,56 @@ use_github=1
 
 ```bash
 $ tree -L 2
-> .
-> ├── bin/
-> │   ├── ld-accept
-> │   ├── ld-deny
-> │   ├── ld-emergency-accept-all
-> │   ├── ld-emergency-deny-all
-> │   ├── ld-export
-> │   ├── ld-import
-> │   ├── ld-reinitialize
-> │   ├── ld-remove-allow
-> │   ├── ld-remove-block
-> │   ├── ld-setup
-> │   ├── ld-start
-> │   ├── ld-stop
-> │   ├── ld-update-blacklists
-> │   └── ld-update-countries
-> ├── blacklist-ips/
-> ├── blacklist-networks/
-> │   ├── bogons/
-> │   ├── countries/
-> │   ├── domains/
-> │   ├── ipset-blocklist-removals.txt
-> │   ├── iptable-drop-old-blocks.txt
-> │   ├── iptable-drops.txt
-> │   └── iptable-removals.txt
-> ├── confs/
-> ├── post-process/
-> ├── pre-process/
-> ├── README.md
-> ├── whitelist-ips/
-> └── whitelist-networks/
+.
+├── bin
+│   ├── ld-allow
+│   ├── ld-allow-all
+│   ├── ld-block
+│   ├── ld-block-all
+│   ├── ld-export
+│   ├── ld-import
+│   ├── ld-kill
+│   ├── ld-load-lists
+│   ├── ld-reinitialize
+│   ├── ld-reload
+│   ├── ld-remove-allow
+│   ├── ld-remove-block
+│   ├── ld-restart
+│   ├── ld-start
+│   ├── ld-status
+│   ├── ld-stop
+│   ├── ld-test
+│   └── ld-update-lists
+├── blacklist-ips
+│   ├── ahrefs.com.ips
+│   └── ips.txt
+├── blacklist-networks
+│   └── cidrs.txt
+├── conf
+│   └── lockdown-default.conf
+├── etc
+│   ├── fail2ban
+│   ├── init.d
+│   └── logrotate.d
+├── ld-install
+├── lib
+├── lists
+│   ├── blacklists
+│   ├── countries
+│   ├── countries.txt
+│   └── country-codes.txt
+├── post-process
+│   ├── ipset.rules
+│   └── iptables.rules
+├── pre-process
+│   ├── ipset.rules
+│   └── iptables.rules
+├── README.md
+├── whitelist-ips
+│   └── ips.txt
+└── whitelist-networks
+    └── cidrs.txt
+
 ```
 
 Type the name of any file in bin/ with --help or -h and hit return to get a short description of what it does, parameters it accepts and examples.
