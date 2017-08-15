@@ -62,7 +62,7 @@ IFS=$'\n\t'
 
 # Load configuration file
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-if [ -f $SRCDIR/conf/lockdown-default.conf ] || [ ! -f $SRCDIR/conf/lockdown.conf ]
+if [ ! -f $SRCDIR/conf/lockdown-default.conf ] && [ ! -f $SRCDIR/conf/lockdown.conf ]
 then
   echo "Lockdown installation configuration file not found, cannot continue."
   exit 1
@@ -427,7 +427,7 @@ if [ ! -f /usr/bin/fail2ban-server ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $FAIL2BAN
 fi
-if [ ! -f /usr/lib64/libgamin* ]
+if [ ! -f /usr/lib64/libgamin-1.so.0 ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $GAMIN
 fi

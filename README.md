@@ -164,7 +164,6 @@ Type the name of any file in bin/ with --help or -h and hit return to get a shor
 ```bash
 # Example
 bin/ld-accept --help
-```
 > Command: ld-accept
 > Description: Allow an IP or subnet through the firewall
 > Examples:
@@ -172,6 +171,7 @@ bin/ld-accept --help
 >   ld-allow 1.2.3   # Accept all traffic from 1.2.3.0/24
 >   ld-allow 1.2     # Accept all traffic from 1.2.0.0/16
 >   ld-allow 1       # Accept all traffic from 1.0.0.0/8
+```
 
 
 ## Examples
