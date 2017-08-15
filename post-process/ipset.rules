@@ -1,7 +1,0 @@
-# This file will be sourced after creation of IP sets and
-# the loading of data into them and is relatively unrelated
-# to iptables as iptables is generally flushed and reloaded
-# after this.
-#
-# This would most probably be a list of ipset commands, but may
-# execute any bash script.

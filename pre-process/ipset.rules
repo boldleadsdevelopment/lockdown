@@ -1,5 +1,0 @@
-# This file will be sourced before creation of IP sets but
-# after ipset is flushed and all lists destroyed.
-#
-# This would most probably be a list of ipset commands, but may
-# execute any bash script.

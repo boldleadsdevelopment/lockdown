@@ -1,5 +1,0 @@
-# This file will be sourced after creation of IP chains and
-# default Lockdown policies and rules loaded into them.  
-#
-# This would most probably be a list of iptables commands, but may
-# execute any bash script.

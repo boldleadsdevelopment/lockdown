@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta charset="utf-8">
+<title></title>
+<meta name="description" content="">
+<meta name="author" content="">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.5.1/css/bulma.min.css">
+<!--[if lt IE 9]>
+<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+<link rel="shortcut icon" href="">
+
+<style>
+button.accordion {
+    background-color: #eee;
+    color: #444;
+    cursor: pointer;
+    padding: 18px;
+    width: 100%;
+    border: none;
+    text-align: left;
+    outline: none;
+    font-size: 15px;
+    transition: 0.4s;
+}
+
+button.accordion.active, button.accordion:hover {
+    background-color: #ddd;
+}
+
+div.panel {
+    padding: 0 18px;
+    background-color: white;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease-out;
+}
+</style>
+
+</head>
+<body>
+<div class="section is-marginless is-paddingless">
+	<div class="columns is-marginless is-paddingless">
+		<div class="column is-10 has-text-centered is-offset-1  is-paddingless">
+	<div class="figure">
+		<img src="images/logo.png" alt="Lockdown Firewall Security Scripts">
+	</div>
+		</div>
+			</div>
+</div>
+
+<div class="section is-marginless is-paddingless">
+	
+	<div class="columns is-marginless is-paddingless">
+		<div class="column is-10 has-text-centeredx is-offset-1  is-paddingless">
+			
+	<button>What is it?</button>
+	<div class="panel">
+	  <p>Lockdown is a set of scripts, lists and configuration files used to quickly implement granular intelligent automated firewall security at the host level using iptables, ipset and fail2ban.  In it's default configuration it is very good at defending web servers running Apache or Nginx and supports ModSec!</p>
+	</div>
+
+	<button class="accordion">Why is it used?</button>
+	<div class="panel">
+	  <p>Lockdown is used to quickly and easily provide OS-level protection against a wide range of attacks which can be automatically detected by reading log files.  It is particularly effective out of the box against brute force and DDOS attacks if your web server is properly configured.</p>
+	</div>
+
+	<button class="accordion">Where is it used?</button>
+	<div class="panel">
+	  <p>It is designed to be used in automated configurations using Nginx such as Docker or AWS services such as Elastic Container Service or Elastic Beanstalk, but is also well-suited and in use on dedicated servers running cPanel and LAMP stacks.</p>
+	</div>
+	
+		</div>
+			</div>
+
+</div>
+
+
+<div class="section is-marginless is-paddingless">
+	
+	<div class="columns is-marginless is-paddingless">
+		<div class="column is-10 has-text-centeredx is-offset-1  is-paddingless">
+			
+	<button class="accordion">What Linux distros are supported?</button>
+	<div class="panel">
+	  <li>Amazon Linux</li>
+	  <li>CentOS</li>
+	  <li>Fedora</li>
+	  <li>Red Hat Enterprise Linux (RHEL)</li>
+	  <li>Ubuntu Server</li>
+	</div>
+
+	<button class="accordion">How is it installed?</button>
+	<div class="panel">
+	  <code>
+	    $ git clone https://github.com/boldleadsdevelopment/lockdown
+	    $ cd lockdown
+	    $ sudo ./ld-install
+	  </code>
+	</div>
+
+	<button class="accordion">Where is it?</button>
+	<div class="panel">
+	  <p><a href="https://github.com/boldleadsdevelopment/lockdown">Github</a></p>
+	</div>
+	
+		</div>
+			</div>
+
+</div>
+
+<script>
+var acc = document.getElementsByClassName("accordion");
+var i;
+
+for (i = 0; i < acc.length; i++) {
+  acc[i].onclick = function() {
+    this.classList.toggle("active");
+    var panel = this.nextElementSibling;
+    if (panel.style.maxHeight){
+      panel.style.maxHeight = null;
+    } else {
+      panel.style.maxHeight = panel.scrollHeight + "px";
+    } 
+  }
+}
+</script>
+
+</body>
+</html>
