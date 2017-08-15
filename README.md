@@ -1,5 +1,5 @@
 # [Lockdown](https://github.com/boldleadsdevelopment/lockdown)
-## v0.1
+## v0.1 PRE-BETA
 
 
 ## Synopsis
@@ -13,7 +13,7 @@ In a nutshell, let us *assume* the following:
 
   * Most services and web sites do not truly deliver value to the entire globe
   * Most services and web sites do not truly receive value from the entire globe
-  * The vast majority of traffic from many countries is not only useless, but also dangerous
+  * The vast majority of traffic from many countries is not only irrelevant, but also dangerous
   * Both computational resources and data privacy are more important than junk traffic
   * Chasing down attackers manually consumes more time than it is worth and is a never ending job
   * Every site on the Internet gets hit with hundreds if not thousands of automated attacks on a daily basis
@@ -40,7 +40,7 @@ Therefore, **Lockdown** will *do* the following:
 
 ## Installation
 
-Before you install, you should probably edit the `confs/lockdown.conf` file.  When you run `bin/ld-setup`, the following things will happen (*note that using the -f or --force option will run without asking any questions*) in sequential order:
+Before you install, you should probably edit the `confs/lockdown.conf` file.  When you run `./ld-install`, the following things will happen (*note that using the -f or --force option will run without asking any questions*) in sequential order:
 
   * Existing iptables, ipset and fail2ban configurations will be renamed (with -b4-lockdown.bak appended)
   * Yum will ask you to install iptables, ipset and fail2ban if any are missing
@@ -67,12 +67,69 @@ Congratulations, you are now blocking half the Internet!  Take a nap! \o/
 
 ## Defaults
 
-  * By default, we do not block any /8 blocks, to do so, set block-eight to 1 in the config
-  * XXX
-  * XXX
-  * XXX
-  * XXX
-  * XXX
+From the configuration file:
+```bash
+# Lockdown Default Configuration File v001
+#
+# This file could be exploited, be sure only root has write
+# access
+# 
+# Double quote strings
+# 0 = false, 1 = true
+
+# Allow blocking of /8 networks
+allow_eight=1
+
+# If set to 1, single IP blocks will be re-assigned as /24 CIDR ranges
+bad_neighbor_policy=1
+
+# Block non-assigned, multicast and private network blocks
+block_bogons=1
+
+# Countries blocks to whitelist
+countries_good=(
+  us
+  ca
+)
+
+# Countries blocks to whitelist
+countries_bad=(
+  cn
+  ir
+  kr
+  ro
+  ru
+  sr
+  vz
+)
+
+# Location of Lockdown files
+location_bin=/usr/local/sbin
+location_conf=/etc/lockdown/conf
+location_lists=/etc/lockdown/lists
+location_logs=/var/log/lockdown
+
+# Globally open ports
+# Any traffic not matching a blacklist entry will be
+# allowed to access services on each of these ports
+ports=(
+  22
+  80
+  443
+)
+
+# Repository for Lockdown lists
+repo_lists='https://github.com/boldleadsdevelopment/lockdown-lists'
+
+# When enabled, the latest lists will be downloaded 
+# using ld-update-lists.  If set to 0, lists will never
+# be updated and that is probably not wise.
+update_lists=1
+
+# Using Github will update lists via our Github repository
+# Setting this to 0 will download from their source 
+use_github=1
+```
 
 ## How Rules are Processed
 
@@ -107,6 +164,8 @@ Requirements for Operation:
 
   * **Fail 2 Ban**  
       Temporarily bans offending IPs and can be tightly coupled with any service
+  * **Gamin**  
+      Modern file access monitoring system which enables Fail2Ban to process logs more quickly (not required but is installed with everything else)
   * **IP Set**  
       Compiles address sets for direct usage by the kernel resulting in extremely fast procesing of large sets
   * **IP Tables**  
@@ -174,54 +233,29 @@ bin/ld-accept --help
 ```
 
 
-## Examples
+## Command Documentation
 
-`ld-accept`
-> xxx
+`command`
+> How to use...
+> x -y -z
 
-`ld-deny`
-> xxx
-
-`ld-emergency-accept-all`
-> xxx
-
-`ld-emergency-deny-all`
-> xxx
-
-`ld-export`
-> xxx
-
-`ld-import`
-> xxx
-
-`ld-reinitialize`
-> xxx
-
-`ld-remove-allow`
-> xxx
-
-`ld-remove-block`
-> xxx
-
-`ld-replace-firewalld`
-> xxx
-
-`ld-setup`
-> xxx
-
-`ld-start`
-> xxx
-
-`ld-stop`
-> xxx
-
-`ld-update-blacklists`
-> xxx
-
-`ld-update-countries`
-> xxx
+`command`
+> How to use...
+> x -y -z
 
 
+## FAQ
+
+  * How many is too many?
+    - This set up is currently being used in production n a 24 core dedicated server with 128GB RAM as well as a 8 core 32GB Nginx cloud server and has had not measurable impact on CPU, RAM or NIC bandwidth while having **all** of the provided lists loaded!
+  * What happens if I use this and something goes terribly, horribly wrong?
+    - You are responsible for your own actions.
+  * Is this software related to Fail2Ban, IP Set, IP Tables or X?
+    - Only insofar as it uses them.
+  * Will using this suite of software cure my DDOS problem?
+    - It will most certainly help.  Of course, it does not actually perform rate limiting itself.  However, if you have rate limiting configured and this is running on an Nginx server, then IPs that Nginx blocks for exceeding the limit will be added to the Fail2Ban IP set if those blocks are logged.
+  * Will this software stop hackers?
+    - It will definitely deter robots and those using any sort of brute force tactics, but using this does not negate the need to properly secure all ports of entry.
 
 ## TODO
 
