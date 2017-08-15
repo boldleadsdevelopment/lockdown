@@ -1,0 +1,9 @@
+/var/log/fail2ban.log {
+    weekly
+    rotate 7
+    missingok
+    compress
+    postrotate
+      /usr/local/bin/fail2ban-client set logtarget /var/log/fail2ban.log >/dev/null
+    endscript
+}

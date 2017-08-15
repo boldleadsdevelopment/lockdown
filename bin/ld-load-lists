@@ -1,0 +1,248 @@
+#!/bin/bash
+#ld-load-lists
+
+#===============================================================================
+#
+# FILE: 
+#   ld-load-lists
+#
+# REVISION:  
+#   001
+#
+# WHEN TO USE:  
+#   After updating lists (otherwise new list data will not be used) or during
+#   installation.
+#
+# USAGE: 
+#   ld-load-lists [-d] [-h] [-s] [-u] [-v]
+#   ld-load-lists [--dry-run] [--help] [--silent] [--update] [--verbose]
+#
+# DESCRIPTION:
+#   This script loads all the Lockdown lists into their appropriate places,
+#   including user defined lists.  It does not process pre- or post-processing
+#   rules.
+#
+# OPTIONS:
+#   -d | --dry-run
+#      Echos the commands that would be executed rather than executing them
+#   -h | --help
+#      Run help function and exit
+#   -s | --silent
+#      Silent will attempt to prevent any and all output except in the event
+#      of failure.  Silent operation implies --yes and will not ask permission
+#      for anything, you have been warned!
+#      Currently, any output from external programs will not be suppressed.
+#   -u | --update
+#      Update lists regardless of update_lists setting
+#   -v | --verbose
+#      Output each line of the script after validations are parsed
+#   -y | --yes
+#      Automatically say yes to everything
+#
+# AUTHOR: Jason White (@iDoMeteor)
+#===============================================================================
+
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
+
+# Load configuration file
+SRCDIR="/etc/lockdown"
+if [ ! -d $SRCDIR ]
+then
+  echo "Lockdown configuration directory /etc/lockdown not found, cannot continue."
+  exit 1
+fi
+if [ ! -f $SRCDIR/conf/lockdown-default.conf ] && [ ! -f $SRCDIR/conf/lockdown.conf ]
+then
+  echo "No Lockdown configuration file found, cannot continue."
+  exit 1
+fi
+if [ -f $SRCDIR/conf/lockdown-default.conf ]
+then
+  . $SRCDIR/conf/lockdown-default.conf
+fi
+if [ -f $SRCDIR/conf/lockdown.conf ]
+then
+  . $SRCDIR/conf/lockdown.conf
+fi
+
+# Instantiate Variables
+DATE=`date +%Y%m%d%H%M%S`
+DOWNLOAD=$update_lists
+DRY_RUN=''
+LISTS=(
+  'blacklist-ips'
+  'blacklist-net'
+  'whitelist-ips'
+  'whitelist-net'
+)
+SILENT=0
+
+# Save origin
+ORIGIN=`pwd`
+
+# Help function
+help () { 
+  echo "Description:"
+  echo "  Loads Lockdown and user lists into their proper IP sets.  Will update"
+  echo "  lists in accordance with configuration file and command line settings."
+  echo "Usage:"
+  echo "  `basename $0` [-d] [-h] [-s] [-u] [-v]"
+  echo "  `basename $0` [--dry-run] [--help] [--silent] [--update] [--verbose]"
+  exit 0
+}
+
+# Load a set of country data into the appropriate IP Set list
+load_country_data () {
+ list=$1
+ countries=$2
+    for country_code in $countries
+    do
+      if [ -f "$location_lists/countries/$country_code.zone" ]
+      then
+        if (( ! SILENT )) 
+        then 
+          echo "Adding entries from $country_code.zone to $list-countries"
+        fi
+        while read value
+        do 
+          if [[ ! $value =~ ^#*$ ]] && [ -z `ipcalc -c $value` ]
+          then
+            $DRY_RUN "ipset test $list-countries $value || ipset add $list-countries $value"
+          fi
+        done < "$location_lists/countries/$country_code.zone"
+      else
+        if (( ! SILENT )) 
+        then 
+          echo "File $country_code.zone not found, skipping country with code $country_code"; 
+        fi
+      fi
+    done
+}
+
+# Check for arguments or provide help
+if [ $# -eq 0 ] ; then
+  help
+fi
+
+# Parse command line arguments into variables
+while :
+do
+    case ${1:-} in
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
+      -h | --help)
+      help
+      shift 1
+    ;;
+      -s | --silent)
+      SILENT=1
+      shift 1
+    ;;
+      -u | --update)
+      DOWNLOAD=1
+      shift 1
+    ;;
+      -v | --verbose)
+      VERBOSE=true
+      shift 1
+    ;;
+      -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      *)  # No more options
+      break
+    ;;
+    esac
+done
+
+# Check verbosity
+if [ -v VERBOSE ] ; then
+  set -v
+fi
+
+# Update lists
+if (( DOWNLOAD ))
+then
+  $DRY_RUN $location_bin/ld-update-lists -f
+fi
+
+# Clear or create related IP sets
+$DRY_RUN ipset flush blacklist-ips || $DRY_RUN ipset create blacklist-ips hash:ip
+$DRY_RUN ipset flush blacklist-net || $DRY_RUN ipset create blacklist-net hash:net
+$DRY_RUN ipset flush whitelist-ips || $DRY_RUN ipset create whitelist-ips hash:ip
+$DRY_RUN ipset flush whitelist-net || $DRY_RUN ipset create whitelist-net hash:net
+$DRY_RUN ipset flush blacklist-countries || $DRY_RUN ipset create blacklist-countries hash:net
+$DRY_RUN ipset flush whitelist-countries || $DRY_RUN ipset create whitelist-countries hash:net
+
+# Load custom data into sets
+for list in ${LISTS[@]}
+do
+  dir="$SRCDIR/$list"
+  if [ -d $dir ]
+  then
+    for file in $dir
+    do
+      if (( ! SILENT )) ; then echo "Adding entries from $file to $list"; fi
+      while read value
+      do 
+        if [ value ] && [[ ! $value =~ ^# ]] && [ -z `ipcalc -c $TARGET` ]
+        then
+          $DRY_RUN ipset add $list $value
+        fi
+      done < $file
+    done
+  else
+    if [ DRY_RUN ]
+    then
+      echo "Dry run: Skipping creation and loading of $dir"
+    else
+      if (( ! SILENT )) ; then echo "$dir not found, skipping"; fi
+    fi
+  fi
+done
+
+# Load public blacklists into sets
+for file in $location_lists/blacklists/*
+do
+  # Determine list
+  if [[ "$file" =~ \.ips$ ]]
+  then
+    list=blacklist-ips
+  elif [[ "$file" =~ \.cidr$ ]]
+  then
+    list=blacklist-nets
+  elif (( ! SILENT ))
+  then
+    echo "Unsupported public blacklist file extension, must be .ips or .cidr,"
+    echo "skipping $file"
+    continue
+  fi
+  # Load data
+  if (( ! SILENT )) ; then echo "Adding entries from $file to $list"; fi
+  while read value
+  do 
+    if [ value ] \
+      && [[ ! "$value" =~ ^$ ]] \
+      && [[ ! "$value" =~ ^# ]] \
+      && [[ ! "$value" =~ ^\; ]]
+    then
+      if [[ "$value" =~ \; ]]
+      then
+        # Ugly Spamhaus hack cuz it's 03:43
+        value=`cut -d\  -f1 <<< $value`
+      fi
+      $DRY_RUN "ipcalc -c $value && ipset add $list $value"
+    fi
+  done < $file
+done
+
+# Load country data
+load_country_data blacklist $countries_bad $DRY_RUN
+load_country_data whitelist $countries_good $DRY_RUN
+
+exit 0

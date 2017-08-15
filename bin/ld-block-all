@@ -1,0 +1,166 @@
+#!/bin/bash
+#ld-block-all
+
+#===============================================================================
+#
+# FILE: 
+#   ld-block-all
+#
+# REVISION:  
+#   001
+#
+# USAGE: 
+#   ld-block-all [-d] [-h] [-n] [-p] [-t /tmp] [-v]
+#   ld-block-all [--dry-run] [--help] [--notmp] [--permanent] 
+#                            [--tmp /tmp] [--verbose]
+#
+# DESCRIPTION:
+#   This script will backup your current configuration to a temporary location
+#   and completely reboot IP tables and IP set with deny all policies as well
+#   as clear all temporary data from Fail2Ban.  The temporary location may be 
+#   specified by the user, and will be output in the report.
+#
+#   The IP of the user executing the command will automatically be
+#   whitelisted.
+#
+#   Current saved configurations will only be reset if the permanent option
+#   is supplied.
+#
+# OPTIONS:
+#   -d | --dry-run
+#      Echos the commands that would be executed rather than executing them
+#   -h | --help
+#      Run help function and exit
+#   -n | --notmp
+#      Do not save currently running configuration
+#   -p | --permanent
+#      Make changes permanent
+#   -t | --tmp
+#      Provide an alternate location to save current configuration
+#   -v | --verbose
+#      Output each line of the script after validations are parsed
+#
+# CAVEATS:
+#   Options -n and -t are mutually exclusive which is not checked so if you
+#   do something silly like that the consequences are unknown.
+#
+# AUTHOR: Jason (@iDoMeteor)
+#===============================================================================
+
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
+
+# Values
+DRY_RUN=''
+IP_SELF=`curl whatip.gzo.com`
+PERMANENT=0
+TMP_LOCATION='/tmp/'
+VERBOSE=0
+
+# Help function
+help () { 
+  echo "Description:"
+  echo "  This script will backup your current configuration to a temporary location"
+  echo "  and completely reboot IP tables and IP set with deny all policies as well"
+  echo "  as clear all temporary data from Fail2Ban.  The temporary location may be"
+  echo "  specified by the user, and will be output in the report."
+  echo
+  echo "  The IP of the user executing the command will automatically be"
+  echo "  whitelisted."
+  echo
+  echo "  Current saved configurations will only be reset if the permanent option"
+  echo "  is supplied."
+  echo "Usage:"
+  echo "  `basename $0` [-d] [-h] [-n] [-p] [-t /tmp] [-v]"
+  echo "  `basename $0` [--dry-run] [--help] [--no-tmp] [--permanent] [--tmp /tmp] [--verbose]"
+}
+
+# Check for arguments or provide help
+if [ $# -eq 0 ] ; then
+  help
+fi
+
+# Parse command line arguments into variables
+while :
+do
+    case ${1:-} in
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
+      -h | --help)
+      help
+      shift 1
+    ;;
+      -n | --notmp)
+      TMP_LOCATION=''
+      shift 1
+    ;;
+      -p | --permanent)
+      PERMANENT=1
+      shift 1
+    ;;
+      -t | --tmp)
+      TMP_LOCATION=$2
+      shift 2
+    ;;
+      -v | --verbose)
+      VERBOSE=1
+      shift 1
+    ;;
+      -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      *)  # No more options
+      break
+    ;;
+    esac
+done
+
+# Check verbosity
+if (( VERBOSE )) ; then
+  set -v
+fi
+
+# Backup running configs unles directed not to
+if [ ! -z "$TMP_LOCATION" && -d "$TMP_LOCATION"] ; then
+  $DRY_RUN ld-export --tmp "$TMP_LOCATION"
+fi
+
+# Primary command set
+CMDS = (
+  # Clear IP set
+  'ipset flush'
+  'ipset x'
+  # Flush nat, mangle, all chains
+  'iptables -t nat -F'
+  'iptables -t mangle -F'
+  'iptables -F'
+  # Delete non-default chains
+  'iptables -X'
+  # Allow loopback
+  'iptables -I INPUT 1 -i lo -j ACCEPT'
+  # Allow DNS
+  'iptables -A OUTPUT -p udp --dport 53 -j ACCEPT'
+  # Whitelist own IP
+  'iptables -I INPUT -j ACCEPT -s $IP_SELF'
+  # Accept all on all chains
+  'iptables -P INPUT DROP'
+  'iptables -P FORWARD DROP'
+  'iptables -P OUTPUT DROP'
+)
+
+# Execute or echo primary commands
+for cmd in CMDS
+do
+  $DRY_RUN "$cmd"
+done
+
+# Save configurations permanently if instructed to do so
+if (( PERMANENT )) ; then
+  $DRY_RUN ld-export
+fi
+
+exit 0

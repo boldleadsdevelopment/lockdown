@@ -1,0 +1,95 @@
+#!/bin/bash
+#ld-start
+
+#===============================================================================
+#
+# FILE: 
+#   ld-start
+#
+# REVISION:  
+#   001
+#
+# WHEN TO USE: 
+#   When you want to start IP Tables, IP Set and Fail2Ban in the proper
+#   order.
+#
+# USAGE: 
+#   ld-start [-d] [-h] [-v]
+#   ld-start [--dry-run] [--help] [--verbose]
+#
+# DESCRIPTION:
+#   Starts the services in the following order:
+#     * ipset
+#     * iptables
+#     * fail2ban
+#
+# OPTIONS:
+#   -d | --dry-run
+#      Echos the commands that would be executed rather than executing them
+#   -h | --help
+#      Run help function and exit
+#   -v | --verbose
+#      Output each line of the script after validations are parsed
+#
+# AUTHOR: Jason White (@iDoMeteor)
+#===============================================================================
+
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
+
+# Values
+DRY_RUN=''
+
+# Help function
+help () { 
+  echo "Description:"
+  echo "  Start IP Tables, IP Set and Fail2Ban"
+  echo "Usage:"
+  echo "  `basename $0` [-d] [-f] [-v]"
+  echo "  `basename $0` [--dry-run] [--force] [--verbose]"
+  exit 0
+}
+
+# Check for arguments or provide help
+if [ $# -eq 0 ] ; then
+  help
+fi
+
+# Save origin
+ORIGIN=`pwd`
+
+# Parse command line arguments into variables
+while :
+do
+    case ${1:-} in
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
+      -h | --help)
+      help
+    ;;
+      -v | --verbose)
+      VERBOSE=true
+      shift 1
+    ;;
+      -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      *)  # No more options
+      break
+    ;;
+    esac
+done
+
+# Check verbosity
+if [ -v VERBOSE ] ; then
+  set -v
+fi
+
+# Execution commands
+$DRY_RUN service ipset start
+$DRY_RUN service iptables start
+$DRY_RUN service fail2ban start

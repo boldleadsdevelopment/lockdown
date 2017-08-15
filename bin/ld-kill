@@ -1,0 +1,101 @@
+#!/bin/bash
+#ld-kill
+
+#===============================================================================
+#
+# FILE: 
+#   ld-kill
+#
+# REVISION:  
+#   001
+#
+# WHEN TO USE: 
+#   When you want to kill IP Tables, IP Set and Fail2Ban in the proper
+#   order, this just uses regular kill unless you -f it then it uses -9.
+#
+# USAGE: 
+#   ld-kill [-d] [-f] [-h] [-v]
+#   ld-kill [--dry-run] [--fire] [--force] [--help] [--verbose]
+#
+# DESCRIPTION:
+#   Kills the services in the following order:
+#     * fail2ban
+#     * iptables
+#     * ipset
+#
+# OPTIONS:
+#   -d | --dry-run
+#      Echos the commands that would be executed rather than executing them
+#   -f | --fire | -- force
+#      Kill -9
+#   -h | --help
+#      Run help function and exit
+#   -v | --verbose
+#      Output each line of the script after validations are parsed
+#
+# AUTHOR: Jason White (@iDoMeteor)
+#===============================================================================
+
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
+
+# Values
+DRY_RUN=''
+FIRE=''
+
+# Help function
+help () { 
+  echo "Description:"
+  echo "  Kill IP Tables, IP Set and Fail2Ban"
+  echo "Usage:"
+  echo "  `basename $0` [-d] [-f] [-v]"
+  echo "  `basename $0` [--dry-run] [--force] [--verbose]"
+  exit 0
+}
+
+# Check for arguments or provide help
+if [ $# -eq 0 ] ; then
+  help
+fi
+
+# Save origin
+ORIGIN=`pwd`
+
+# Parse command line arguments into variables
+while :
+do
+    case ${1:-} in
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
+      -f | --fire | --force)
+      FIRE='-9'
+    ;;
+      -h | --help)
+      help
+    ;;
+      -v | --verbose)
+      VERBOSE=true
+      shift 1
+    ;;
+      -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      *)  # No more options
+      break
+    ;;
+    esac
+done
+
+# Check verbosity
+if [ -v VERBOSE ] ; then
+  set -v
+fi
+
+# Execution commands
+`pidof fail2ban` && $DRY_RUN kill $FIRE `pidof fail2ban`
+`pidof iptables` && $DRY_RUN kill $FIRE `pidof iptables`
+`pidof ipset` && $DRY_RUN kill $FIRE `pidof ipset`

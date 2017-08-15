@@ -1,0 +1,4 @@
+*.sw*
+*.bak
+*~
+conf/lockdown.conf

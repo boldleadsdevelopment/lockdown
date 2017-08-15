@@ -1,0 +1,186 @@
+#!/bin/bash
+#ld-remove-block
+
+
+#===============================================================================
+#
+# FILE: 
+#   ld-remove-block
+#
+# REVISION:  
+#   001
+#
+# WHEN TO USE:
+#   When you want to remove an IP or range previously blocked.
+#
+# USAGE: 
+#   ld-remove-block 1
+#   ld-remove-block 1.2.3.4
+#   ld-remove-block 1.0.0.0
+#   ld-remove-block 1.0.0.0/8
+#   ld-remove-block 1.2
+#   ld-remove-block 1.2.0.0
+#   ld-remove-block 1.2.0.0/16
+#   ld-remove-block 1.2.3
+#   ld-remove-block 1.2.3.4
+#   ld-remove-block 1.2.3.4/32
+#   ld-remove-block 1.2.3.5/21
+#
+# DESCRIPTION:
+#   Removes an IP or range from blacklists if found.
+#
+#   For example: 
+#     1.2.3.4     = 1.2.3.4 in blacklist-ips
+#     1.2.3.4/32  = 1.2.3.4 in blacklist-ips
+#     1.2.3       = 1.2.3.0/24 in blacklist-networks
+#     1.2.3.0     = 1.2.3.0/24 in blacklist-networks
+#     1.2.3.0/24  = 1.2.3.0/24 in blacklist-networks
+#     1.2         = 1.2.0.0/16 in blacklist-networks
+#     1.2.0.0     = 1.2.0.0/16 in blacklist-networks
+#     1.2.0.0/16  = 1.2.0.0/16 in blacklist-networks
+#     1           = 1.0.0.0/8 in blacklist-networks
+#     1.0.0.0     = 1.0.0.0/8 in blacklist-networks
+#     1.0.0.0/8   = 1.0.0.0/8 in blacklist-networks
+#     1.2.3.5/21  = 1.2.3.5/21 in blacklist-networks
+#
+# OPTIONS:
+#   [1-9]*
+#      Required
+#      Target IP, CIDR or short-code
+#   -d | --dry-run
+#      Echos the commands that would be executed rather than executing them
+#   -h | --help
+#      Run help function and exit
+#   -v | --verbose
+#      Output each line of the script after validations are parsed
+#
+# AUTHOR: Jason White (@iDoMeteor)
+#===============================================================================
+
+# Strict mode
+set -euo pipefail
+IFS=$'\n\t'
+
+# Values
+DRY_RUN=''
+LIST_IPS='blacklist-ips'
+LIST_NETS='blacklist-net'
+TARGET=''
+TARGET_LIST=''
+
+# Save origin
+ORIGIN=`pwd`
+
+# Help function
+help () { 
+  echo "Description:"
+  echo "  Remove a previously blocked IP, CIDR range or subnet shortcut."
+  echo "Usage:"
+  echo "  `basename $0` [-d] [-h] [-f] [-v]"
+  echo "  `basename $0` [--dry-run] [--help] [--force] [--verbose]"
+}
+
+# Check for arguments or provide help
+if [ $# -eq 0 ] ; then
+  help
+  exit 0
+fi
+
+# Parse command line arguments into variables
+while :
+do
+    case ${1:-} in
+      # A valid target starts with a non-zero digit
+      [1-9]*)
+      TARGET_INPUT=$1
+      shift 1
+    ;;
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
+      -h | --help)
+      help
+      shift 1
+      exit 0
+    ;;
+      -v | --verbose)
+      VERBOSE=true
+      shift 1
+    ;;
+      -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      ?*) 
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+    ;;
+      *)  # No more options
+      break
+    ;;
+    esac
+done
+
+# Check required IP/range target passed
+if [ -z TARGET_INPUT ] ; then
+  echo "Error: No target provided"
+  help
+  exit 1
+fi
+
+# Check verbosity
+if [ ! -n VERBOSE ] ; then
+  set -v
+fi
+
+# Parse target input into pieces
+if [ 0 -eq `expr index "$TARGET_INPUT" .` ]
+then
+  if [ 0 < $TARGET_INPUT \
+    && 256 > $TARGET_INPUT ]
+  then
+    TARGET="$TARGET_INPUT.0.0.0/8"
+    TARGET_LIST=$LIST_NETS
+  fi
+elif [[ $TARGET_INPUT =~ ^[1-9][0-9]{0,2}\.[1-9][0-9]{0,2}$ ]]
+then
+  TARGET="$TARGET_INPUT.0.0/16"
+  TARGET_LIST=$LIST_NETS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){2}[1-9][0-9]{0,2}$ ]]
+then
+  TARGET="$TARGET_INPUT.0/24"
+  TARGET_LIST=$LIST_NETS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}$ ]]
+then
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_IPS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/32$ ]]
+then
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_IPS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/[1-9][0-9]?$ ]]
+then
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_NETS
+fi
+
+if [ -z "$TARGET" ]
+then
+  echo "Error: Invalid target provided"
+  help
+  exit 1
+fi
+
+# Check final target is a valid IP or range
+if [ ! -z `ipcalc -c $TARGET` ] ; then
+  echo "Error: Computed target $TARGET is invalid"
+  help
+  exit 1
+fi
+
+# Execution commands
+CMD="ipset test $TARGET_LIST $TARGET && ipset del $TARGET_LIST $TARGET"
+$DRY_RUN "$CMD"
+
+exit 0
