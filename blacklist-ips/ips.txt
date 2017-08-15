@@ -1,0 +1,4 @@
+# You may add IPs to blacklist here, one on each line
+# All files in this directory will be added to IP set blacklist-ips
+# 1.2.3.4
+# 1.2.3.4/32

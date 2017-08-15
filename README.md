@@ -63,7 +63,55 @@ Before you install, you should probably edit the `confs/lockdown.conf` file.  Wh
   * Configuration file and lists will be copied to /etc/lockdown
   * A report will be written to ./setup.log and emailed to the address configured in the config file
 
-Congratulations, you are now blocking half the Internet!  Take a nap! \o/
+## How Rules are Processed
+
+  1. Global pre-process rules are parsed
+  1. Whitelisted IPs are parsed, matches are allowed on any port
+  1. Blacklisted IPs are parsed, matches are denied on any port
+  1. Whitelisted networks are parsed, matches are allowed on any port
+  1. Blacklisted networks are parsed, matches are denied on any port
+  1. Global post-process rules are parsed, generally allowing all traffic on ports 80 & 443
+
+## Requirements & Dependencies
+
+Distros Supported: 
+
+  * Amazon Linux
+  * CentOS
+  * Fedora (untested)
+  * RHEL (untested)
+  * Ubuntu
+
+OS Pre-Installation Dependencies
+
+  * **Bash**  
+      To interpret the scripts in bin/
+  * **systemctl**  
+      For controlling services
+  * **Package Manager**  
+      Supported: Apt, DNF, Yum
+      Used to install iptables, ipset & fail2ban are not present
+
+Requirements for Operation:
+
+  * **Fail 2 Ban**  
+      Temporarily bans offending IPs and can be tightly coupled with any service
+  * **Gamin**  
+      Modern file access monitoring system which enables Fail2Ban to process logs more quickly (not required but is installed with everything else)
+  * **IP Set**  
+      Compiles address sets for direct usage by the kernel resulting in extremely fast procesing of large sets
+  * **IP Tables**  
+      The standard Linux firewall, determines what happens to a network packet as it traverses the network interface
+
+Optional:
+
+  * **Cron**  
+      To orchestrate automated list and **Lockdown**  updates
+  * **Public Internet connection**  
+      For updating lists
+  * **WGet**  
+      Also for updating lists (set update_lists = 0 to prevent attempts to update)
+
 
 ## Defaults
 
@@ -131,56 +179,6 @@ update_lists=1
 use_github=1
 ```
 
-## How Rules are Processed
-
-  1. Global pre-process rules are parsed
-  1. Whitelisted IPs are parsed, matches are allowed on any port
-  1. Blacklisted IPs are parsed, matches are denied on any port
-  1. Whitelisted networks are parsed, matches are allowed on any port
-  1. Blacklisted networks are parsed, matches are denied on any port
-  1. Global post-process rules are parsed, generally allowing all traffic on ports 80 & 443
-
-## Requirements & Dependencies
-
-Distros Supported: 
-
-  * Amazon Linux
-  * CentOS
-  * Fedora (untested)
-  * RHEL (untested)
-  * Ubuntu
-
-OS Pre-Installation Dependencies
-
-  * **Bash**  
-      To interpret the scripts in bin/
-  * **systemctl**  
-      For controlling services
-  * **Package Manager**  
-      Supported: Apt, DNF, Yum
-      Used to install iptables, ipset & fail2ban are not present
-
-Requirements for Operation:
-
-  * **Fail 2 Ban**  
-      Temporarily bans offending IPs and can be tightly coupled with any service
-  * **Gamin**  
-      Modern file access monitoring system which enables Fail2Ban to process logs more quickly (not required but is installed with everything else)
-  * **IP Set**  
-      Compiles address sets for direct usage by the kernel resulting in extremely fast procesing of large sets
-  * **IP Tables**  
-      The standard Linux firewall, determines what happens to a network packet as it traverses the network interface
-
-Optional:
-
-  * **Cron**  
-      To orchestrate automated list and **Lockdown**  updates
-  * **Public Internet connection**  
-      For updating lists
-  * **WGet**  
-      Also for updating lists (set update_lists = 0 to prevent attempts to update)
-
-
 ## Files Included
 
 ```bash
@@ -235,11 +233,639 @@ bin/ld-accept --help
 
 ## Command Documentation
 
-`command`
+`ld-install`
+> WHEN TO USE:  
+>   When you are very sure you want to boot up the full Lockdown suite of
+>   utilities using the configuration files in the conf/ directory where
+>   ld-install is located.
+>
+> USAGE: 
+>   ld-install [-d] [-n] [-s] [-v] [-y]
+>   ld-install [--dry-run] [--no-download] [--silent] [--verbose] [--yes]
+>
+> DESCRIPTION:
+>   This script will try to do all of the following things, 
+>    once it starts running, and in the order specified:
+>     * Install extra packages for Enterprise Linux if required
+>     * Install iptables, ipset and fail2ban if required
+>     * Stop each of the three above services if running
+>     * Copy default configuration files into place
+>     * Start each of the three services
+>     * Enable each of the three services to run at boot
+>     * Stop nftables or firewalld
+>     * Disable nftables or firewalld from running at boot
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -n | --no-download
+>      Do not run commands to download latest blacklist & country CIDR lists
+>   -s | --silent
+>      Silent will attempt to prevent any and all output except in the event
+>      of failure.  Silent operation implies --yes and will not ask permission
+>      for anything, you have been warned!
+>      Currently, any output from external programs will not be suppressed.
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+>   -x | --no-backup
+>      Do not back up any potentially pre-existing files
+>   -y | --yes
+>      Automatically say yes to everything
+
+`ld-allow`
+> WHEN TO USE:
+>   Fire it off when you want to quickly allow traffic on all ports from
+>   an IP or CIDR range in a variety of formats.  The point is to be as
+>   fast and brainless to use as possible.
+>
+> USAGE: 
+>   ld-allow 1
+>   ld-allow 1.2.3.4
+>   ld-allow 1.0.0.0
+>   ld-allow 1.0.0.0/8
+>   ld-allow 1.2
+>   ld-allow 1.2.0.0
+>   ld-allow 1.2.0.0/16
+>   ld-allow 1.2.3
+>   ld-allow 1.2.3.4
+>   ld-allow 1.2.3.4/32
+>   ld-allow 1.2.3.5/21
+>
+> DESCRIPTION:
+>   Allows an IP or subnet through the firewall.  Specify full single IPs or
+>   subnets by leaving specifying the non-zero bytes of the dot-decimal address.
+>
+>   For example: 
+>     1           = 1.0.0.0/8 in whitelist-networks
+>     1.0.0.0      = 1.0.0.0/8 in whitelist-networks
+>     1.0.0.0/8    = 1.0.0.0/8 in whitelist-networks
+>     1.2         = 1.2.0.0/16 in whitelist-networks
+>     1.2.0.0      = 1.2.0.0/16 in whitelist-networks
+>     1.2.0.0/16  = 1.2.0.0/16 in whitelist-networks
+>     1.2.3       = 1.2.3.0/24 in whitelist-networks
+>     1.2.3.0      = 1.2.3.0/24 in whitelist-networks
+>     1.2.3.0/24  = 1.2.3.0/24 in whitelist-networks
+>     1.2.3.5/21  = 1.2.3.5/21 in whitelist-networks
+>     1.2.3.4     = 1.2.3.4 in whitelist-ips
+>     1.2.3.4/32   = 1.2.3.4 in whitelist-ips
+>   Note: /8, /16, /24 and /32 are the only bit blocks currently utilized
+>
+> OPTIONS:
+>   [1-9]\*
+>      Required
+>      Target IP, CIDR or short-code
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-allow-all`
+> WHEN TO USE:
+>   When you have some serious issues and need everything open in a hurry!
+>
+> USAGE: 
+>   ld-allow-all [-d] [-h] [-n] [-p] [-t /tmp] [-v]
+>   ld-allow-all [--dry-run] [--help] [--notmp] [--permanent] 
+>                            [--tmp /tmp] [--verbose]
+>
+> DESCRIPTION:
+>   This script will backup your current configuration to a temporary location
+>   and completely reboot IP tables and IP set with accept all policies as well
+>   as clear all temporary data from Fail2Ban.  The temporary location may be 
+>   specified by the user, and will be output in the report.
+>
+>   Current saved configurations will only be reset if the permanent option
+>   is supplied.
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -n | --notmp
+>      Do not save currently running configuration
+>   -p | --permanent
+>      Make changes permanent
+>   -t | --tmp
+>      Provide an alternate location to save current configuration
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+>
+> CAVEATS:
+>   Options -n and -t are mutually exclusive which is not checked so if you
+>   do something silly like that the consequences are unknown.
+
+`ld-block`
+> WHEN TO USE:
+>   Fire it off when you want to quickly block traffic on all ports from
+>   an IP or CIDR range in a variety of formats.  The point is to be as
+>   fast and brainless to fire off as possible.
+>
+> USAGE: 
+>   ld-block 1
+>   ld-block 1.2.3.4
+>   ld-block 1.0.0.0
+>   ld-block 1.0.0.0/8
+>   ld-block 1.2
+>   ld-block 1.2.0.0
+>   ld-block 1.2.0.0/16
+>   ld-block 1.2.3
+>   ld-block 1.2.3.4
+>   ld-block 1.2.3.4/32
+>   ld-block 1.2.3.5/21
+>
+> DESCRIPTION:
+>   Allows an IP or subnet through the firewall.  Specify full single IPs or
+>   subnets by leaving specifying the non-zero bytes of the dot-decimal address.
+>
+>   For example: 
+>     1           = 1.0.0.0/8 in blacklist-networks
+>     1.0.0.0      = 1.0.0.0/8 in blacklist-networks
+>     1.0.0.0/8    = 1.0.0.0/8 in blacklist-networks
+>     1.2         = 1.2.0.0/16 in blacklist-networks
+>     1.2.0.0      = 1.2.0.0/16 in blacklist-networks
+>     1.2.0.0/16  = 1.2.0.0/16 in blacklist-networks
+>     1.2.3       = 1.2.3.0/24 in blacklist-networks
+>     1.2.3.0      = 1.2.3.0/24 in blacklist-networks
+>     1.2.3.0/24  = 1.2.3.0/24 in blacklist-networks
+>     1.2.3.5/21  = 1.2.3.5/21 in blacklist-networks
+>     1.2.3.4     = 1.2.3.4 in blacklist-ips
+>     1.2.3.4/32   = 1.2.3.4 in blacklist-ips
+>   Note: /8, /16, /24 and /32 are the only bit blocks currently utilized
+>
+> OPTIONS:
+>   [1-9]\*
+>      Required
+>      Target IP, CIDR or short-code
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-block-all`
+> USAGE: 
+>   ld-block-all [-d] [-h] [-n] [-p] [-t /tmp] [-v]
+>   ld-block-all [--dry-run] [--help] [--notmp] [--permanent] 
+>                            [--tmp /tmp] [--verbose]
+>
+> DESCRIPTION:
+>   This script will backup your current configuration to a temporary location
+>   and completely reboot IP tables and IP set with deny all policies as well
+>   as clear all temporary data from Fail2Ban.  The temporary location may be 
+>   specified by the user, and will be output in the report.
+>
+>   The IP of the user executing the command will automatically be
+>   whitelisted.
+>
+>   Current saved configurations will only be reset if the permanent option
+>   is supplied.
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -n | --notmp
+>      Do not save currently running configuration
+>   -p | --permanent
+>      Make changes permanent
+>   -t | --tmp
+>      Provide an alternate location to save current configuration
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+>
+> CAVEATS:
+>   Options -n and -t are mutually exclusive which is not checked so if you
+>   do something silly like that the consequences are unknown.
+
+`ld-export`
+> WHEN TO USE:
+>   When you want to save your current configurations to some specific location.
+>
+> USAGE: 
+>   ld-export
+>   ld-export [--etc]
+>   ld-export [--path /path/to/export] [--tmp /tmp]
+>   ld-export [-e]
+>   ld-export [-p /path/to/export] [-t /tmp]
+>
+> DESCRIPTION:
+>   Saves current configuration of IP Tables, IP Set and Fail2Ban as a set of
+>   files and directories in the directory specified (or pwd when not set).
+>   If any of the services are not running, their existing configuration file
+>   from /etc will be used if it exists.
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -e | --etc
+>      Export currently running config of IP Tables & IP Set to /etc
+>   -h | --help
+>      Run help function and exit
+>   -p | --path
+>      Path or filename to save data to
+>   -t | --tmp
+>      Default = /tmp
+>      Provide an alternate location to save current configuration
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-import`
+> WHEN TO USE:
+>   When you want to import, and implement, a previously exported configuration.
+>
+> USAGE: 
+>   ld-import [-t /tmp] path/
+>   ld-import [--temp /tmp] ./filename.tar.gz
+>
+> DESCRIPTION:
+>   Imports previously exported configurations for IP Tables, IP Set and 
+>   Fail2Ban from a directory or tarball.  Services will be stopped,
+>   configuration imported, and then services will be started again.
+>
+> OPTIONS:
+>   path | filename
+>      Path or filename to import data from
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -t | --tmp
+>      Default = /tmp
+>      Provide an alternate location to save current configuration
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-kill`
+> WHEN TO USE: 
+>   When you want to kill IP Tables, IP Set and Fail2Ban in the proper
+>   order, this just uses regular kill unless you -f it then it uses -9.
+>
+> USAGE: 
+>   ld-kill [-d] [-f] [-h] [-v]
+>   ld-kill [--dry-run] [--fire] [--force] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Kills the services in the following order:
+>     * fail2ban
+>     * iptables
+>     * ipset
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -f | --fire | -- force
+>      Kill -9
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-load-lists`
+> WHEN TO USE:  
+>   After updating lists (otherwise new list data will not be used) or during
+>   installation.
+>
+> USAGE: 
+>   ld-load-lists [-d] [-h] [-s] [-u] [-v]
+>   ld-load-lists [--dry-run] [--help] [--silent] [--update] [--verbose]
+>
+> DESCRIPTION:
+>   This script loads all the Lockdown lists into their appropriate places,
+>   including user defined lists.  It does not process pre- or post-processing
+>   rules.
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -s | --silent
+>      Silent will attempt to prevent any and all output except in the event
+>      of failure.  Silent operation implies --yes and will not ask permission
+>      for anything, you have been warned!
+>      Currently, any output from external programs will not be suppressed.
+>   -u | --update
+>      Update lists regardless of update_lists setting
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+>   -y | --yes
+>      Automatically say yes to everything
+
+`ld-reinitialize`
+> WHEN TO USE: 
+>   What you have fubar'd everything and want to reboot IP Tables, IP Set
+>   and Fail2Ban.
+>
+> USAGE: 
+>   ld-reinitialize [-c lockdown.conf] [-h] [-o tarball.tar.gz] [-s] [-y]
+>   ld-reinitialize [--config lockdown.conf] [--help] [--out tarball.tar.gz]
+>                   [--skip-f2b] [--yes]
+>
+> DESCRIPTION:
+>   This script will do the following things in the following order:
+>     * Export current saved configurations, if available, to a temporary
+>       location
+>     * Export current running configurations, if available, to a temporary
+>       location
+>     * (Re-)download configured blacklist and country files
+>     * Stop Fail2Ban
+>     * Overwrite existing Fail2Ban configuration files with defaults
+>     * Reset IP Tables and IP Set to their default state if running
+>     * Remove IP Tables and IP Set configuration files and start them if not
+>     * Re-configure IP Tables and IP Set according to config file
+>     * Save IP Tables and IP Set configurations
+>     * Start Fail2Ban
+>     * Ensure all services are enabled
+>    This script will not:
+>     * Install anything
+>     * Uninstall or disable anything
+>
+> OPTIONS:
+>   -c | --config
+>      Default = /etc/lockdown/conf/lockdown.conf
+>      Use given configuration files
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -o | --out
+>      Location to save archives
+>   -s | --skip-f2b
+>      Do not reboot F2B configuration files
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+>   -y | --yes
+>      Automatically say yes to everything
+
+`ld-reload`
+> WHEN TO USE: 
+>   When you want to reload IP Tables, IP Set and Fail2Ban in the proper
+>   order.
+>
+> USAGE: 
+>   ld-reload [-d] [-h] [-v]
+>   ld-reload [--dry-run] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Reloads the services in the following order:
+>     * fail2ban
+>     * ipset
+>     * iptables
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-remove-allow`
+> WHEN TO USE:
+>   When you want to remove an IP or range previously allowed.
+>
+> USAGE: 
+>   ld-remove-allow 1
+>   ld-remove-allow 1.2.3.4
+>   ld-remove-allow 1.0.0.0
+>   ld-remove-allow 1.0.0.0/8
+>   ld-remove-allow 1.2
+>   ld-remove-allow 1.2.0.0
+>   ld-remove-allow 1.2.0.0/16
+>   ld-remove-allow 1.2.3
+>   ld-remove-allow 1.2.3.4
+>   ld-remove-allow 1.2.3.4/32
+>   ld-remove-allow 1.2.3.5/21
+>
+> DESCRIPTION:
+>   Removes an IP or range from whitelists if found.
+>
+>   For example: 
+>     1.2.3.4     = 1.2.3.4 in whitelist-ips
+>     1.2.3.4/32  = 1.2.3.4 in whitelist-ips
+>     1.2.3       = 1.2.3.0/24 in whitelist-networks
+>     1.2.3.0     = 1.2.3.0/24 in whitelist-networks
+>     1.2.3.0/24  = 1.2.3.0/24 in whitelist-networks
+>     1.2         = 1.2.0.0/16 in whitelist-networks
+>     1.2.0.0     = 1.2.0.0/16 in whitelist-networks
+>     1.2.0.0/16  = 1.2.0.0/16 in whitelist-networks
+>     1           = 1.0.0.0/8 in whitelist-networks
+>     1.0.0.0     = 1.0.0.0/8 in whitelist-networks
+>     1.0.0.0/8   = 1.0.0.0/8 in whitelist-networks
+>     1.2.3.5/21  = 1.2.3.5/21 in whitelist-networks
+>
+> OPTIONS:
+>   [1-9]\*
+>      Required
+>      Target IP, CIDR or short-code
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-remove-block`
+> WHEN TO USE:
+>   When you want to remove an IP or range previously blocked.
+>
+> USAGE: 
+>   ld-remove-block 1
+>   ld-remove-block 1.2.3.4
+>   ld-remove-block 1.0.0.0
+>   ld-remove-block 1.0.0.0/8
+>   ld-remove-block 1.2
+>   ld-remove-block 1.2.0.0
+>   ld-remove-block 1.2.0.0/16
+>   ld-remove-block 1.2.3
+>   ld-remove-block 1.2.3.4
+>   ld-remove-block 1.2.3.4/32
+>   ld-remove-block 1.2.3.5/21
+>
+> DESCRIPTION:
+>   Removes an IP or range from blacklists if found.
+>
+>   For example: 
+>     1.2.3.4     = 1.2.3.4 in blacklist-ips
+>     1.2.3.4/32  = 1.2.3.4 in blacklist-ips
+>     1.2.3       = 1.2.3.0/24 in blacklist-networks
+>     1.2.3.0     = 1.2.3.0/24 in blacklist-networks
+>     1.2.3.0/24  = 1.2.3.0/24 in blacklist-networks
+>     1.2         = 1.2.0.0/16 in blacklist-networks
+>     1.2.0.0     = 1.2.0.0/16 in blacklist-networks
+>     1.2.0.0/16  = 1.2.0.0/16 in blacklist-networks
+>     1           = 1.0.0.0/8 in blacklist-networks
+>     1.0.0.0     = 1.0.0.0/8 in blacklist-networks
+>     1.0.0.0/8   = 1.0.0.0/8 in blacklist-networks
+>     1.2.3.5/21  = 1.2.3.5/21 in blacklist-networks
+>
+> OPTIONS:
+>   [1-9]\*
+>      Required
+>      Target IP, CIDR or short-code
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-restart`
+> WHEN TO USE: 
+>   When you want to restart IP Tables, IP Set and Fail2Ban in the proper
+>   order.
+>
+> USAGE: 
+>   ld-restart [-d] [-h] [-v]
+>   ld-restart [--dry-run] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Restarts the services in the following order:
+>     * fail2ban
+>     * ipset
+>     * iptables
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-start`
+> WHEN TO USE: 
+>   When you want to start IP Tables, IP Set and Fail2Ban in the proper
+>   order.
+>
+> USAGE: 
+>   ld-start [-d] [-h] [-v]
+>   ld-start [--dry-run] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Starts the services in the following order:
+>     * ipset
+>     * iptables
+>     * fail2ban
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-status`
+> WHEN TO USE: 
+>   When you want to status IP Tables, IP Set and Fail2Ban in the proper
+>   order.
+>
+> USAGE: 
+>   ld-status [-d] [-h] [-v]
+>   ld-status [--dry-run] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Display the daemons status of each of the following:
+>     * ipset
+>     * iptables
+>     * fail2ban
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-stop`
+> WHEN TO USE: 
+>   When you want to stop IP Tables, IP Set and Fail2Ban in the proper
+>   order.
+>
+> USAGE: 
+>   ld-stop [-d] [-h] [-v]
+>   ld-stop [--dry-run] [--help] [--verbose]
+>
+> DESCRIPTION:
+>   Stops the services in the following order:
+>     * fail2ban
+>     * iptables
+>     * ipset
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -h | --help
+>      Run help function and exit
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+`ld-test`
+> WHEN TO USE:  
+>   When you want to see if an IP or range is in any of the lists.
+>
+> USAGE: 
+>   ld-test <target>
+>   ld-test <target>
+>
+> DESCRIPTION:
+>   Checks all the lists to see if the provided target (in any of the formats
+>   used by ld-allow/block) matches any rules.
+>
+> OPTIONS:
+>   [1-9]\*
+>      Required
+>      Target IP, CIDR or short-code
+
+`ld-update-lists`
+> WHEN TO USE:  
+>   When you want to update provided lists, which you should probably do daily.
+>
+> USAGE: 
+>   ld-update-lists [-d] [-f] [-g] [-h] [-s] [-v]
+>   ld-update-lists [--dry-run] [--force] [--github] [--help] [--silent] [--verbose]
+>
+> DESCRIPTION:
+>   Download the latest lists from the sites defined in the configuration
+>   file.
+>
+> OPTIONS:
+>   -d | --dry-run
+>      Echos the commands that would be executed rather than executing them
+>   -f | --force
+>      Force downloading even if update_lists is 0
+>   -g | --github
+>      Use Github even if use_github is 0
+>   -h | --help
+>      Run help function and exit
+>   -n | --no-github
+>      Force direct downloads even if use_github is 1
+>   -s | --silent
+>      No output of any kind
+>   -v | --verbose
+>      Output each line of the script after validations are parsed
+
+
+## Library Function Documentation
+
+`determine_distro`
 > How to use...
 > x -y -z
 
-`command`
+`init_lockdown`
+> How to use...
+> x -y -z
+
+`installation_report`
 > How to use...
 > x -y -z
 
@@ -266,7 +892,7 @@ Make an NPM wrapper module
 
 ## Bug Reports & Contributions
 
-Bug reports and code contributions can be made against the [@iDoMeteor Lockdown Repo](https://github.com/idometeor/lockdown).
+Bug reports and code contributions are welcome.
 
 ## External Sources
 

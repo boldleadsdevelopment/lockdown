@@ -54,7 +54,7 @@
 #   -v | --verbose
 #      Output each line of the script after validations are parsed
 #
-# AUTHOR: Jason White (@iDoMeteor)
+# AUTHOR: Jason (@iDoMeteor)
 #===============================================================================
 
 # Strict mode

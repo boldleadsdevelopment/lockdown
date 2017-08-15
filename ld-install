@@ -11,7 +11,8 @@
 #
 # WHEN TO USE:  
 #   When you are very sure you want to boot up the full Lockdown suite of
-#   utilities in their default configuration.
+#   utilities using the configuration files in the conf/ directory where
+#   ld-install is located.
 #
 # USAGE: 
 #   ld-install [-d] [-n] [-s] [-v] [-y]
@@ -53,7 +54,7 @@
 #  Add -s|--silent option
 #  Integrate pre/post processing rules
 #
-# AUTHOR: Jason White (@iDoMeteor)
+# AUTHOR: Jason (@iDoMeteor)
 #===============================================================================
 
 # Strict mode

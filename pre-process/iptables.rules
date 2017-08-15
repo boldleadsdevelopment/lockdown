@@ -1,0 +1,5 @@
+# This file will be sourced before creation of IP chains and
+# generally after iptables is rebooted to default state.
+#
+# This would most probably be a list of iptables commands, but may
+# execute any bash script.
