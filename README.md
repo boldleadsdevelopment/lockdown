@@ -253,4 +253,4 @@ Bug reports and code contributions can be made against the [@iDoMeteor Lockdown 
 
 --
 
-Originally published 20170814 by @iDoMeteor and is dedicated to Sinsemilla, in memoriam.
+<3
