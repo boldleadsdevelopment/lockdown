@@ -66,18 +66,24 @@ div.panel {
 	<button class="accordion">What is it?</button>
 	<div class="panel">
 	  <p>Lockdown is a set of scripts, lists and configuration files used to quickly implement granular intelligent automated firewall security at the host level using iptables, ipset and fail2ban.</p>
-	  <p>In it's default configuration it is very good at defending web servers running Apache or Nginx and supports ModSec!</p>
+    <br>
+	  <p>Lockdown maintains lists of known malicious IPs, emerging threat networks and country-IP assignments to automatically block bad traffic and allow the good.
+	  <br>
+	  <p>Out of the box, Lockdown also helps monitor Apache, Nginx, Mod Security and SSH logs to automatically ban suspicious IPs.  Many other services are supported</p>
 	</div>
 
 	<button class="accordion">Why is it used?</button>
 	<div class="panel">
-	  <p>Lockdown is used to quickly and easily provide OS-level protection against a wide range of attacks which can be automatically detected by reading log files and blacklisting known malicious IPs, networks and countries.</p>
-	  <p>It is particularly effective out of the box against brute force and DDOS attacks if your web server is properly configured.</p>
+	  <p>The Internet is a dangerous place, most servers face hundreds or thousands of automated attacks per day.  At best this consume valuable server resources better used for pleasing your visitors.  At worse, your data could be stolen or destroyed.</p>
+    <br>
+	  <p>Lockdown helps drastically reduce the attack surface of your systems.  This means you have much less noise to obscure the signals from more sophisticated attackers and legitimate traffic.</p>
 	</div>
 
 	<button class="accordion">Where is it used?</button>
 	<div class="panel">
-	  <p>It is designed to be used in automated configurations using Nginx such as Docker or AWS services such as Elastic Container Service or Elastic Beanstalk, but is also well-suited and in use on dedicated servers running cPanel and LAMP stacks.</p>
+	  <p>Lockdown is designed to be used in automated configurations using Nginx such as Docker or AWS services such as Elastic Container Service or Elastic Beanstalk and is also well-suited and in use on dedicated servers running cPanel and LAMP stacks.</p>
+	  <br>
+	  <p>It is particularly effective out of the box against brute force and DDOS attacks if your web server is properly configured.</p>
 	</div>
 	
 	<button class="accordion">What Linux distros are supported?</button>
