@@ -39,14 +39,13 @@
 #
 # OPTIONS:
 #   -c | --config
-#      Default = /etc/lockdown/conf/lockdown.conf
-#      Use given configuration files
+#      Provide alternate configuration file
 #   -d | --dry-run
 #      Echos the commands that would be executed rather than executing them
 #   -h | --help
 #      Run help function and exit
 #   -o | --out
-#      Location to save archives
+#      Location to save backup otherwise ./
 #   -s | --skip-f2b
 #      Do not reboot F2B configuration files
 #   -v | --verbose
@@ -60,6 +59,24 @@
 # Strict mode
 set -euo pipefail
 IFS=$'\n\t'
+
+# Instantiate variables
+BACKUP=1
+CONFIG='/etc/lockdown/conf/lockdown.conf'
+DATE=`date +%Y%m%d%H%M%S`
+DISTRO=''
+DOWNLOAD=1
+DRY_RUN=0
+EPEL='epel-release'
+FAIL2BAN='fail2ban'
+GAMIN='gamin'
+IPSET='ipset'
+IPTABLES='iptables'
+OUT=''
+PORTS=$ports
+SILENT=0
+VERBOSE=0
+YES=''
 
 # Help function
 help () { 
@@ -83,34 +100,255 @@ ORIGIN=`pwd`
 while :
 do
     case ${1:-} in
+      -d | --dry-run)
+      DRY_RUN='echo'
+      shift 1
+    ;;
       -h | --help)
       help
       shift 1
     ;;
+      -n | --no-download)
+      DOWNLOAD=0
+      shift 1
+    ;;
       -v | --verbose)
-    VERBOSE=true
-    shift 1
+      VERBOSE=1
+      shift 1
+    ;;
+      -x | --no-backup)
+      BACKUP=0
+      shift 1
+    ;;
+      -y | --yes)
+      YES='-y'
+      shift 1
     ;;
       -*)
-    echo "Error: Unknown option: $1" >&2
-    exit 1
+      echo "Error: Unknown option: $1" >&2
+      exit 1
     ;;
       *)  # No more options
-    break
+      break
     ;;
     esac
 done
 
-# Validate required arguments
+# Load configuration file
+if [ ! -f /etc/lockdown/conf/lockdown-default.conf ] && [ ! -f "$CONFIG" ]
+then
+  echo "Lockdown configuration files not found, cannot continue."
+  exit 1
+fi
+if [ -f "$SRCDIR/conf/lockdown-default.conf" ]
+then
+  . "$SRCDIR/conf/lockdown-default.conf"
+fi
+if [ -f "$CONFIG" ]
+then
+  . "$CONFIG"
+else
+  echo "Lockdown custom configuration file $CONFIG not found, cannot continue."
+  exit 1
+fi
 
-# Set necessary defaults
+# Ensure distro is supported
+determine_distro
+if [ -z "$DISTRO" ]
+then
+  echo "Could not determine distro, cannot continue."
+  echo "Please report this as a bug on Github, thanks!"
+  exit 1
+elif (( ! SILENT ))
+then
+  echo "$DISTRO discovered, proceeding with $PACKAGE_MANAGER"
+fi
+
+# Warn user unless using force
+if [ -z $YES ]
+then
+  echo "Lockdown is a sophisticated control system for a suite of sophisticated software."
+  echo "It's misuse or breakage can cause your system to become unusable or unable to"
+  echo "accept incoming traffic or send any out.  In the case of failures, you must be"
+  echo "capable of diagnosing and repairing any problems.  Lockdown is free software"
+  echo "provided as is and you are responsible for any effects or side-effects of it's"
+  echo "existence on your systems."
+  echo
+  echo "You are about to perform a reinitialization of Lockdown on `hostname` with"
+  echo "IP `curl -s whatip.gzo.com`.  This will stop your firewall related services,"
+  echo "overwrite their configurations and restart them.  By default, a backup tarball"
+  echo "will be saved in the current"
+  echo "directory."
+  echo
+  read -p "Are you sure you wish to proceed? [y/N] " -n 1 -r REPLY
+  if [[ $REPLY =~ ^[Yy]$ ]] ; then
+    echo
+    echo "Locking down `hostname`!"
+  else
+    echo "Exiting without making any changes."
+    exit 2
+  fi
+fi
 
 # Check verbosity
-if [ -v VERBOSE ] ; then
+if (( VERBOSE )) ; then
   set -v
 fi
 
+# Backup currently saved configuration
+if (( BACKUP ))
+then
+  $DRY_RUN ld-export
+fi
 
-# Stop all services
-# Re-run setup with -f, etc
-# Cleanup
+# Stop services
+$DRY_RUN pidof fail2ban && $DRY_RUN service fail2ban stop
+$DRY_RUN pidof iptables && $DRY_RUN service iptables stop
+$DRY_RUN pidof ipset && $DRY_RUN service ipset stop
+
+# Kill services if necessary
+$DRY_RUN pidof fail2ban && $DRY_RUN pidof fail2ban | $DRY_RUN xargs kill -9
+$DRY_RUN pidof iptables && $DRY_RUN pidof iptables | $DRY_RUN xargs kill -9
+$DRY_RUN pidof ipset && $DRY_RUN pidof ipset | $DRY_RUN xargs kill -9
+
+## Manipulate system daemons!!
+if (( ! SILENT )) ; then echo; fi
+case $DISTRO in
+  "Amazon Linux"|"CentOS")
+    lockdown_daemons_srvchkcnf
+  ;;
+  "Fedora"|"RHEL"|"Ubuntu")
+    lockdown_daemons_systemctl
+  ;;
+  *)  # No more options
+    echo "Unsupported distro, exiting."
+    exit 1
+  ;;
+esac
+if (( ! SILENT )) ; then echo; fi
+
+
+# Download latest lists
+if (( DOWNLOAD ))
+then
+  if (( ! SILENT ))
+  then
+    echo "Downloading latest blacklists & country CIDRs."
+  fi
+  $DRY_RUN /usr/local/sbin/ld-update-lists -f
+fi
+if (( ! SILENT )) ; then echo; fi
+
+## Initialize ipset
+# Clear IP set
+$DRY_RUN ipset flush
+$DRY_RUN ipset x
+
+# Process IP Set pre-process rules
+if [ -f "$SRCDIR/pre-process/ipset.rules" ]
+then
+  . "$SRCDIR/pre-process/ipset.rules" $SILENT
+elif (( ! SILENT ))
+then
+  echo "Rules file $1 not found, skipping"
+fi
+
+# Create sets
+$DRY_RUN ipset create blacklist-f2b hash:ip
+$DRY_RUN ipset create blacklist-ips hash:ip
+$DRY_RUN ipset create blacklist-net hash:net
+$DRY_RUN ipset create whitelist-ips hash:ip
+$DRY_RUN ipset create whitelist-net hash:net
+$DRY_RUN ipset create blacklist-countries hash:net
+$DRY_RUN ipset create whitelist-countries hash:net
+
+# Load list data into sets
+$DRY_RUN $location_bin/ld-load-lists
+
+# Process IP Set post-process rules
+if [ -f "$SRCDIR/post-process/ipset.rules" ]
+then
+  . "$SRCDIR/post-process/ipset.rules" $SILENT
+elif (( ! SILENT ))
+then
+  echo "Rules file $1 not found, skipping"
+fi
+
+## Initialize iptables
+# Flush nat, mangle, all chains
+$DRY_RUN iptables -t nat -F
+$DRY_RUN iptables -t mangle -F
+$DRY_RUN iptables -F
+# Delete non-default chains
+$DRY_RUN iptables -X
+# Set default policy to drop
+$DRY_RUN iptables -P INPUT DROP
+$DRY_RUN iptables -P FORWARD DROP
+$DRY_RUN iptables -P OUTPUT ACCEPT
+
+# Process IP Tables pre-process rules
+if [ -f "$SRCDIR/pre-process/iptables.rules" ]
+then
+  . "$SRCDIR/pre-process/iptables.rules" $SILENT
+elif (( ! SILENT ))
+then
+  echo "Rules file $1 not found, skipping"
+fi
+
+# Drop invalid packets
+$DRY_RUN iptables -I INPUT 1 -m conntrack --ctstate INVALID -j DROP
+# Allow all to/from loopback (lo)
+$DRY_RUN iptables -I INPUT 2 -i lo -j ACCEPT
+$DRY_RUN iptables -I OUTPUT 1 -i lo -j ACCEPT
+# Allow established & related incoming, for outgoing 
+# connections initiated from server
+$DRY_RUN iptables -I INPUT 3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+# Create set matching rules
+$DRY_RUN iptables -I INPUT 4 -m set --match-set whitelist-ips -J ACCEPT
+$DRY_RUN iptables -I INPUT 5 -m set --match-set blacklist-ips -J DROP
+$DRY_RUN iptables -I INPUT 6 -m set --match-set whitelist-net -J ACCEPT
+$DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net -J DROP
+$DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries -J ACCEPT
+$DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries -J DROP
+# Create global inlets
+for port in ${PORTS[@]}
+do
+  # This rule avoids connection tracking in favor of optimal processing 
+  # speed which is the same reason we allow all outgoing traffic rather 
+  # than just related - at small scale this would be a non-issue but at
+  # scale would definitely add a lot of extra cpu cycles in the long term
+  $DRY_RUN iptables -A INPUT -p tcp --dport $port -j ACCEPT
+  # If you were to use a drop target in the default outgoing policy, then
+  # you would want to add an established/related output rule here as well.
+done
+
+# Process IP Tables post-process rules
+if [ -f "$SRCDIR/post-process/iptables.rules" ]
+then
+  . "$SRCDIR/post-process/iptables.rules" $SILENT
+elif (( ! SILENT ))
+then
+  echo "Rules file $1 not found, skipping"
+fi
+
+
+# Installation complete, present results to user if applicable
+if [ $DRY_RUN ]
+then
+  # Dry run notification
+  echo
+  echo "*Notice*"
+  echo "You have run ld-install in dry run mode."
+  echo "If you run the same command line without -d or --dry-run again,"
+  echo "the commands above will be executed and permanent changes will be made."
+  echo
+  echo "Lockdown has *not* been installed and your system has not been altered!"
+elif (( ! SILENT ))
+then
+  # Checking installation
+  installation_report
+fi
+
+## w00t!
+exit 0
+

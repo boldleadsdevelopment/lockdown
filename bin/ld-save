@@ -151,10 +151,10 @@ fi
 if (( ETC ))
 then
   $DRY_RUN tar czf "$SAVE_PATH/$TAG.tar.gz" \
-    /etc/fail2ban* \
+    /etc/sysconfig/ip?tables* \
     /etc/ipset* \
-    /etc/lockdown* \
-    /etc/sysconfig/ip?tables*
+    /etc/fail2ban* \
+    /etc/lockdown*
 else
   # Set up for running configuration export
   $DRY_RUN mkdir -p "$TMP_LOCATION/$TAG/etc"

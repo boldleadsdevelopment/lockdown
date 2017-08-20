@@ -37,6 +37,8 @@
 #      Run help function and exit
 #   -n | --no-download
 #      Do not run commands to download latest blacklist & country CIDR lists
+#   -o | --out
+#      Output directory to save backup tarball
 #   -s | --silent
 #      Silent will attempt to prevent any and all output except in the event
 #      of failure.  Silent operation implies --yes and will not ask permission
@@ -63,23 +65,24 @@ IFS=$'\n\t'
 
 # Load configuration file
 SRCDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-if [ ! -f $SRCDIR/conf/lockdown-default.conf ] && [ ! -f $SRCDIR/conf/lockdown.conf ]
+if [ ! -f "$SRCDIR/conf/lockdown-default.conf" ] \
+  && [ ! -f "$SRCDIR/conf/lockdown.conf" ]
 then
   echo "Lockdown installation configuration file not found, cannot continue."
   exit 1
 fi
-if [ -f $SRCDIR/conf/lockdown-default.conf ]
+if [ -f "$SRCDIR/conf/lockdown-default.conf" ]
 then
-  . $SRCDIR/conf/lockdown-default.conf
+  . "$SRCDIR/conf/lockdown-default.conf"
 fi
-if [ -f $SRCDIR/conf/lockdown.conf ]
+if [ -f "$SRCDIR/conf/lockdown.conf" ]
 then
-  . $SRCDIR/conf/lockdown.conf
+  . "$SRCDIR/conf/lockdown.conf"
 fi
 
 # Instantiate Variables
 BACKUP=1
-DATE=`date +%Y%m%d%H%M%S`
+DATE=`date +%s`
 DISTRO=''
 DOWNLOAD=$update_lists
 DRY_RUN=''
@@ -90,225 +93,29 @@ IPSET='ipset'
 IPTABLES='iptables'
 PACKAGE_MANAGER='yum'
 PORTS=$ports
+SAVE_PATH=`pwd`
 SILENT=0
 YES=''
 
 # Save origin
 ORIGIN=`pwd`
 
-# Distro determination
-determine_distro () {
-  if [ -f /etc/os-release ]
-  then
-    if [[ `cut -d= -f2 /etc/os-release` =~ 'Amazon Linux' ]]
-    then
-      DISTRO='Amazon Linux'
-    elif [[ `cut -d= -f2 /etc/os-release` =~ 'CentOS' ]]
-    then
-      DISTRO='CentOS'
-    elif [[ `cut -d= -f2 /etc/os-release` =~ 'Fedora' ]]
-    then
-      DISTRO='Fedora'
-      PACKAGE_MANAGER='dnf'
-    elif [[ `cut -d= -f2 /etc/os-release` =~ 'RHEL' ]]
-    then
-      DISTRO='RHEL'
-    elif [[ `cut -d= -f2 /etc/os-release` =~ 'Red Hat' ]]
-    then
-      DISTRO='RHEL'
-    elif [[ `cut -d= -f2 /etc/os-release` =~ 'Ubuntu' ]]
-    then
-      DISTRO='Ubuntu'
-      PACKAGE_MANAGER='apt-get'
-    fi
-  elif [ -f /etc/system-release ]
-  then
-    if [[ `cut -d= -f2 /etc/system-release` =~ 'CentOS' ]]
-    then
-      DISTRO='CentOS'
-    fi
-  fi
-}
 
 # Help function
 help () { 
   echo "Description:"
-  echo "  XXX"
+  echo "  Running this program will install Lockdown and all related services,"
+  echo "  configuration files and lists."
   echo "Usage:"
-  echo "  `basename $0` [-f] [-v]"
-  echo "  `basename $0` [--force] [--verbose]"
+  echo "  `basename $0` [-d] [-n] [-s] [-v] [-y]"
+  echo "  `basename $0` [--dry-run] [--no-download] [--silent] [--verbose] [--yes]"
   exit 0
 }
 
-# Lockdown initialization
-init_lockdown () {
-  if [ ! -d /usr/local/sbin ]
-  then
-    mkdir -p /usr/local/sbin
-  fi
-  if [ -d /usr/local/sbin ]
-  then
-    chmod u+x bin/*
-    cp bin/* /usr/local/sbin
-  else
-    echo "Could not create or access /usr/local/sbin, installation cannot continue"
-    exit 1
-  fi
-  if [ ! -d /etc/lockdown ]
-  then
-    mkdir -p /etc/lockdown
-  fi
-  if [ -d /etc/lockdown ]
-  then
-    cp -r blacklist-ips /etc/lockdown
-    cp -r blacklist-networks /etc/lockdown
-    cp -r conf /etc/lockdown
-    cp -r fail2ban /etc
-    cp -r lists /etc/lockdown
-    cp -r post-process /etc/lockdown
-    cp -r pre-process /etc/lockdown
-    cp -r whitelist-ips /etc/lockdown
-    cp -r whitelist-networks /etc/lockdown
-  else
-    echo "Could not create or access /etc/lockdown, installation cannot continue"
-    exit 1
-  fi
-  if [ ! -d /usr/local/share/lockdown ]
-  then
-    mkdir -p /usr/local/share/lockdown
-  fi
-  if [ -d /usr/local/share/lockdown ]
-  then
-    cp -r lists/* /usr/local/share/lockdown
-  else
-    echo "Could not create or access /usr/local/share/lockdown, installation cannot continue"
-    exit 1
-  fi
-}
-
-# Report installation status
-installation_report () {
-  # Check for executables & required directories
-  if [ -f /usr/bin/iptables ]
-  then
-    echo "/usr/bin/iptables found"
-  else
-    "Could not find iptables, please report on Github issues"
-    exit 1
-  fi
-  if [ -f /usr/sbin/ipset ]
-  then
-    echo "/usr/sbin/ipset found"
-  else
-    "Could not find ipset, please report on Github issues"
-    exit 1
-  fi
-  if [ -f /usr/bin/fail2ban-client ]
-  then
-    echo "/usr/bin/fail2ban-client found"
-  else
-    echo "Could not find fail2ban, please report on Github issues"
-    exit 1
-  fi
-  if [ -d /etc/fail2ban ]
-  then
-    echo "/etc/fail2ban found"
-  else
-    "Could not find fail2ban configuration files, please report on Github issues"
-    exit 1
-  fi
-  if [ -d /etc/lockdown ]
-  then
-    echo "/etc/lockdown found"
-  else
-    "Could not find Lockdown configuration files, please report on Github issues"
-    exit 1
-  fi
-  if [ -d /usr/share/lockdown ]
-  then
-    echo "/usr/share/lockdown found"
-  else
-    "Could not find Lockdown lists, please report on Github issues"
-    exit 1
-  fi
-  if [ -f /usr/local/sbin/ld-allow ]
-  then
-    echo "/etc/lockdown found"
-  else
-    "Could not find Lockdown configuration files, please report on Github issues"
-    exit 1
-  fi
-
-  # Check required services are running
-  if (( `pidof nftables` ))
-  then
-    "nftables process found, please report on Github issues"
-    exit 1
-  else
-    echo "nftables not running"
-  fi
-  if (( `pidof firewalld` ))
-  then
-    "firewalld process found, please report on Github issues"
-    exit 1
-  else
-    echo "firewalld not running"
-    exit 1
-  fi
-
-  # Check required services are running
-  if (( `pidof iptables` ))
-  then
-    echo "iptables is running"
-  else
-    "iptables process not found, please report on Github issues"
-    exit 1
-  fi
-  if (( `pidof ipset` ))
-  then
-    echo "ipset is running"
-  else
-    "ipset process not found, please report on Github issues"
-    exit 1
-  fi
-  if (( `pidof fail2ban-server` ))
-  then
-    echo "fail2ban-server is running"
-  else
-    "fail2ban-server process not found, please report on Github issues"
-    exit 1
-  fi
-
-  # Make sure everything is A-OK (ld-test should exit 0 status w/no output)
-  if (( `/usr/local/sbin/ld-test` ))
-  then
-    "Lockdown test failed, please report on Github issues"
-    exit 1
-  else
-    echo "Lockdown test passed."
-  fi
-
-  # Display success message and show user relevant files
-  echo
-  echo
-  echo "Success!"
-  echo "Lockdown executables are in /usr/local/sbin and start with ld-"
-  echo "ls /usr/local/sbin/ld-*:"
-  ls /usr/local/sbin/ld-*
-  echo "Lockdown configuration files are in /etc/lockdown"
-  echo "ls /etc/lockdown:"
-  ls /etc/lockdown
-  echo "Lockdown blacklist & country files are in /usr/share/lockdown"
-  echo "ls /usr/share/lockdown:"
-  ls /usr/share/lockdown
-  echo
-  echo "May the force of my ban hammer be with you! - @iDoMeteor"
-}
-
-# Check for arguments or provide help
-if [ $# -eq 0 ] ; then
-  help
-fi
+# Load libraries
+. lib/determine_linux_distro.fnc
+. lib/lockdown_init.fnc
+. lib/lockdown_installation_report.fnc
 
 # Parse command line arguments into variables
 while :
@@ -330,6 +137,10 @@ do
       SILENT=1
       YES='-y'
       shift 1
+    ;;
+      -o | --out)
+      SAVE_PATH=$2
+      shift 2
     ;;
       -v | --verbose)
       VERBOSE=true
@@ -353,11 +164,6 @@ do
     esac
 done
 
-# Check verbosity
-if [ -v VERBOSE ] ; then
-  set -v
-fi
-
 # Ensure distro is supported
 determine_distro
 if [ -z "$DISTRO" ]
@@ -368,9 +174,10 @@ then
 elif (( ! SILENT ))
 then
   echo "$DISTRO discovered, proceeding with $PACKAGE_MANAGER"
+  echo
 fi
 
-# Warn user unless using force
+# Warn user unless they've agreed to everything
 if [ -z $YES ]
 then
   echo "Lockdown is a sophisticated control system for a suite of sophisticated software."
@@ -380,8 +187,8 @@ then
   echo "provided as is and you are responsible for any effects or side-effects of it's"
   echo "existence on your systems."
   echo
-  echo "You are about to perform this installation on `hostname`."
-  echo "`curl -s whatip.gzo.com`."
+  echo "You are about to perform this installation on `hostname` with"
+  echo "IP `curl -s whatip.gzo.com`."
   echo
   read -p "Proceed with installation and configuration of Lockdown and all related services? [y/N] " -n 1 -r REPLY
   if [[ $REPLY =~ ^[Yy]$ ]] ; then
@@ -393,27 +200,39 @@ then
   fi
 fi
 
+# Check verbosity
+if [ -v VERBOSE ]
+then
+  set -v
+fi
+
 # Attempt to back up pre-existing configuration files, this is similar
 # to what ld-export does but does not attempt to save a running configuration.
+if [ ! -d /etc/fail2ban ] && \
+   [ ! -f /etc/ipset.conf ] && \
+   [ ! -d /etc/lockdown ] && \
+   [ ! -d /etc/sysconfig/ip?tables.* ]
+then
+  BACKUP=0
+fi
 if (( BACKUP ))
 then
-  $DRY_RUN mkdir -p "./bak/$DATE" && \
-  $DRY_RUN cp -r \
+  # Check temp location
+  if [ ! -d "$SAVE_PATH" ]
+  then
+    if (( ! SILENT )) ; then echo "Output location $SAVE_PATH does not exist, creating"; fi
+    mkdir -p "$SAVE_PATH"
+  fi
+  $DRY_RUN tar czf "$SAVE_PATH/ld-pre-install-backup-$DATE.tar.gz" \
     /etc/fail2ban* \
-    /etc/ip6tables* \
     /etc/ipset* \
-    /etc/iptables* \
     /etc/lockdown* \
-    /etc/sysconfig/ip6tables* \
-    /etc/sysconfig/iptables* \
-    "./bak/$DATE"
-  $DRY_RUN tar czf "./bak/$DATE-ld-pre-install.tar.gz" "./bak/$DATE"
+    /etc/sysconfig/ip?tables*
 fi
 
 ## Begin Installations!!
 if [ 'yum' = $PACKAGE_MANAGER ] || [ 'dnf' = $PACKAGE_MANAGER ]
 then
-  # TODO: Check if this is already installed
   $DRY_RUN $PACKAGE_MANAGER install $YES $EPEL
 fi
 if [ ! -f /usr/bin/iptables ]
@@ -432,7 +251,7 @@ if [ ! -f /usr/lib64/libgamin-1.so.0 ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $GAMIN
 fi
-$DRY_RUN init_lockdown $YES
+$DRY_RUN lockdown_init $YES
 
 ## Manipulate system daemons!!
 # This is done in the following order for maximum safety
@@ -447,40 +266,65 @@ case $DISTRO in
     #   Amazon Linux, CentOS
     #     service x start|stop|etc
     #     chkconfig x on|off
+    # Begin starting services
     if (( ! SILENT )) ; then echo "Starting services for $DISTRO"; fi
     $DRY_RUN service fail2ban start
     if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to start fail2ban, exiting."
         exit 1
+    else
+      echo "Started fail2ban"
     fi
     $DRY_RUN service ipset start
     if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to start ipset, exiting."
         exit 1
+    else
+      echo "Started ipset"
     fi
+echo "Trying iptables"
+    echo $DRY_RUN service iptables start
     $DRY_RUN service iptables start
-    if [ 0 -ne $? ] && [ -z $DRY_RUN ]
+echo "Tried iptables"
+echo $?
+    if [ 1 -eq $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to start iptables, exiting."
         exit 1
+    else
+      echo "Started iptables"
     fi
+    # Begin stopping & disabling conflicting services
+    if [ `pidof nftables` ]
+    then
+      if (( ! SILENT )) ; then echo "Stopping & disabling nftables"; fi
+      $DRY_RUN service nftables stop
+      $DRY_RUN chkconfig nftables off
+    fi
+    if [ `pidof firewalld` ]
+    then
+      if (( ! SILENT )) ; then echo "Stopping & disabling firewalld"; fi
+      $DRY_RUN service firewalld stop
+      $DRY_RUN chkconfig firewalld off
+    fi
+    # Begin enabling services
     if (( ! SILENT )) ; then echo "Enabling services for $DISTRO"; fi
     $DRY_RUN chkconfig fail2ban on
-    if (( `chkconfig fail2ban` )) && [ -z $DRY_RUN ]
+    if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to enable fail2ban, exiting."
     fi
     $DRY_RUN chkconfig ipset on
-    if (( `chkconfig ipset` )) && [ -z $DRY_RUN ]
+    if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
-        echo "Failed to enable fail2ban, exiting."
+        echo "Failed to enable ipset, exiting."
     fi
     $DRY_RUN chkconfig iptables on
-    if (( `chkconfig iptables` )) && [ -z $DRY_RUN ]
+    if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
-        echo "Failed to enable fail2ban, exiting."
+        echo "Failed to enable iptables, exiting."
     fi
     if (( ! SILENT )) ; then echo "Service configuration completed successfully!"; fi
   ;;
@@ -488,6 +332,7 @@ case $DISTRO in
     #   Fedora, RHEL, Ubuntu
     #     systemctl start|stop|etc x
     #     systemctl enable|disable x
+    # Begin starting services
     if (( ! SILENT )) ; then echo "Starting systemctl starts for $DISTRO"; fi
     $DRY_RUN systemctl start fail2ban
     if [ 0 -ne $? ] && [ -z $DRY_RUN ]
@@ -507,6 +352,20 @@ case $DISTRO in
         echo "Failed to start iptables, exiting."
         exit 1
     fi
+    # Begin stopping & disabling conflicting services
+    if [ `pidof nftables` ]
+    then
+      if (( ! SILENT )) ; then echo "Stopping & disabling nftables"; fi
+      $DRY_RUN systemctl stop nftables
+      $DRY_RUN systemctl disable nftables
+    fi
+    if [ `pidof firewalld` ]
+    then
+      if (( ! SILENT )) ; then echo "Stopping & disabling firewalld"; fi
+      $DRY_RUN systemctl stop nftables
+      $DRY_RUN systemctl disable nftables
+    fi
+    # Begin enabling services
     if (( ! SILENT )) ; then echo "Enabling services for $DISTRO"; fi
     $DRY_RUN systemctl enable fail2ban
     if (( `systemctl is-enabled fail2ban` )) && [ -z $DRY_RUN ]
@@ -552,7 +411,8 @@ $DRY_RUN ipset x
 if [ -f "$SRCDIR/pre-process/ipset.rules" ]
 then
   . "$SRCDIR/pre-process/ipset.rules" $SILENT
-elif (( ! $2 ))
+elif (( ! SILENT ))
+then
   echo "Rules file $1 not found, skipping"
 fi
 
@@ -572,7 +432,8 @@ $DRY_RUN $location_bin/ld-load-lists
 if [ -f "$SRCDIR/post-process/ipset.rules" ]
 then
   . "$SRCDIR/post-process/ipset.rules" $SILENT
-elif (( ! $2 ))
+elif (( ! SILENT ))
+then
   echo "Rules file $1 not found, skipping"
 fi
 
@@ -592,7 +453,8 @@ $DRY_RUN iptables -P OUTPUT ACCEPT
 if [ -f "$SRCDIR/pre-process/iptables.rules" ]
 then
   . "$SRCDIR/pre-process/iptables.rules" $SILENT
-elif (( ! $2 ))
+elif (( ! SILENT ))
+then
   echo "Rules file $1 not found, skipping"
 fi
 
@@ -627,7 +489,8 @@ done
 if [ -f "$SRCDIR/post-process/iptables.rules" ]
 then
   . "$SRCDIR/post-process/iptables.rules" $SILENT
-elif (( ! $2 ))
+elif (( ! SILENT ))
+then
   echo "Rules file $1 not found, skipping"
 fi
 

@@ -14,6 +14,8 @@
 #   Fail2Ban from a directory or tarball.  Services will be stopped,
 #   configuration imported, and then services will be started again.
 #
+#   Currently running configuration will be exported if possible.
+#
 # OPTIONS:
 #   path | filename
 #      Path or filename to import data from
@@ -21,9 +23,12 @@
 #      Echos the commands that would be executed rather than executing them
 #   -h | --help
 #      Run help function and exit
+#   -n | --no-backup
+#      Does not attempt to backup current configuration
 #   -t | --tmp
 #      Default = /tmp
-#      Provide an alternate location to save current configuration
+#      Provide an alternate location to save current configuration, only
+#      relevant if passing a tarball to import
 #   -v | --verbose
 #      Output each line of the script after validations are parsed
 #
@@ -35,26 +40,27 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Values
+BACKUP=1
 DATE=`date +%Y%m%d%H%M%S`
-ETC=0
 DRY_RUN=''
-FILENAME="lockdown-$DATE.tar.gz"
+FILENAME=''
 ORIGIN="`pwd`"
-PERMANENT=0
-SAVE_PATH="`pwd`"
-TMP_LOCATION="/tmp/lockdown-$DATE"
+TARBALL=''
+TMP_LOCATION='/tmp'
+TYPE=''
 VERBOSE=0
+WORKING_DIR="lockdown-$DATE"
 
 # Help function
 help () { 
   echo "Description:"
-  echo "  Saves current configuration of IP Tables, IP Set and Fail2Ban as a set of"
-  echo "  files and directories in the directory specificed (or /etc when not set)."
-  echo "  If any of the services are not running, their existing configuration file"
-  echo "  from /etc will be used if it exists."
+  echo "  Restores previously exported (by Lockdown) configuration of IP Tables,"
+  echo "  IP Set and Fail2Ban.  An attempt will be made to back up the current"
+  echo "  configuration, but you will not be asked for confirmation to overwrite"
+  echo "  files."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-p] [-v]"
-  echo "  `basename $0` [--dry-run] [--help] [--path /save/path] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-v]"
+  echo "  `basename $0` [--dry-run] [--help] [--verbose]"
   exit 0
 }
 
@@ -71,21 +77,23 @@ do
       DRY_RUN='echo'
       shift 1
     ;;
-      -e | --etc)
-      ETC=1
-      shift 1
-    ;;
       -h | --help)
       help
       shift 1
     ;;
-      -p | --path)
-      SAVE_PATH=$2
-      shift 2
+      -n | --no-backup)
+      BACKUP=0
+      shift 1
     ;;
       -t | --tmp)
-      TMP_LOCATION=$2
-      shift 2
+      if [ -d $1 ]
+      then
+        TMP_LOCATION=$2
+        shift 2
+      else
+        echo "Error: Invalid temporary location specified: $2"
+        exit 1
+      fi
     ;;
       -v | --verbose)
       VERBOSE=true
@@ -95,18 +103,25 @@ do
       echo "Error: Unknown option: $1" >&2
       exit 1
     ;;
-      *)  # No more options
-      break
+      *)  # Should be a filename or path
+      if [ -d $1 ]
+      then
+	TYPE='dir'
+        WORKING_DIR=$1
+        shift 1
+      elif [ -f $1 ]
+      then
+        TARBALL=$1
+	TYPE='file'
+        shift 1
+      else
+      then
+        echo "Error: Unknown target: $1" >&2
+        exit 1
+      fi
     ;;
     esac
 done
-
-# Check save path exists
-if [ ! -d "$SAVE_PATH" ]
-then
-  echo "Output location $SAVE_PATH could not be found, cannot continue"
-  exit 1
-fi
 
 # Check verbosity
 if (( VERBOSE ))
@@ -114,57 +129,54 @@ then
   set -v
 fi
 
-# Special case scenario
-if (( ETC ))
-then
-  $DRY_RUN iptables-save > /etc/sysconfig/iptables
-  $DRY_RUN ipset -S > /etc/ipset.conf
-  exit 0
-fi
+# Stop services
+$DRY_RUN service fail2ban stop
+$DRY_RUN service iptables stop
+$DRY_RUN service ipset stop
 
-if [ "/etc" -eq "$SAVE_PATH" ]
-then
-  echo "You must use ld-export -e or ld-export --etc to export to /etc"
-  help
-  exit 1
-fi
+# Kill services if necessary
+$DRY_RUN pidof fail2ban && $DRY_RUN pidof fail2ban | $DRY_RUN xargs kill -9
+$DRY_RUN pidof iptables && $DRY_RUN pidof iptables | $DRY_RUN xargs kill -9
+$DRY_RUN pidof ipset && $DRY_RUN pidof ipset | $DRY_RUN xargs kill -9
 
 # Backup currently saved configuration
-$DRY_RUN cd /etc
-$DRY_RUN tar czf "$SAVE_PATH/$FILENAME" \
-  iptables* \
-  ipset* \
-  fail2ban* \
-  lockdown*
+if (( BACKUP ))
+then
+  $DRY_RUN ld-export
+fi
 
-# Set up for running configuration export
-$DRY_RUN mkdir -p "$TMP_LOCATION"
-$DRY_RUN cd "$TMP_LOCATION"
-# Save IP Tables & IP Set rules to temp location
-$DRY_RUN iptables-save > iptables
-$DRY_RUN ipset -S > ipset.conf
-# Copy Fail2Ban configs to temp location
-$DRY_RUN /bin/cp -ar /etc/fail2ban .
-# Copy Lockdown configs to temp location
-$DRY_RUN /bin/cp -ar /etc/lockdown .
+# Set up temporary space if passed a tarball
+if [ $TYPE = 'file' ] && [ -f "$TARBALL" ]
+then
+  $DRY_RUN mkdir -p "$TMP_LOCATION/$WORKING_DIR"
+  $DRY_RUN cp $TARBALL "$TMP_LOCATION/$WORKING_DIR"
+  $DRY_RUN cd "$TMP_LOCATION/$WORKING_DIR"
+  $DRY_RUN tar xzf *.tar.gz
+elif [ $TYPE = 'dir' ] && [ -d "$WORKING_DIR" ] 
+  $DRY_RUN cd $WORKING_DIR
+fi
 
-# Tar them and move them to destination
-$DRY_RUN tar czf "$SAVE_PATH/$FILENAME" *
+# Copy files into place
+$DRY_RUN /bin/cp -rf etc/* /etc
+
+# Check for iptables backup from running config exports
+if [ -f iptables.bak ]
+then
+  $DRY_RUN iptables-restore < iptables.bak
+fi
+
+# Start services
+$DRY_RUN service fail2ban start
+$DRY_RUN service iptables start
+$DRY_RUN service ipset start
+
+# Test services
+$DRY_RUN ld-test
+
 # Clean up
-$DRY_RUN /bin/rm -rf "$TMP_LOCATION"
-# Move uncompressed files to save path
-$DRY_RUN cd "$ORIGIN"
-$DRY_RUN mv "$TMP_LOCATION" "$SAVE_PATH"
+if [ $TYPE = 'file' ]
+then
+  $DRY_RUN /bin/rm -rf $TMP_LOCATION/$WORKING_DIR
+fi
 
 exit 0
-
-
-
-# Execution commands
-# Unpack tarball to temp location
-# Archive current configs
-# Restore ipsets
-# Restore iptables
-# Restore fail2ban
-# Restart all
-# Cleanup

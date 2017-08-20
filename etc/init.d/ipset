@@ -1,0 +1,151 @@
+#!/bin/bash
+#
+# ipset-state Restore ipset state
+#
+# chkconfig: 2345 07 93
+# description: Restores (and saves) ipset state
+#
+# config: /etc/sysconfig/ipset-state
+#
+### BEGIN INIT INFO
+# Provides: ipset-state
+# Required-Start:
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: restore (and save) ipset state
+# Description: restore (and save) ipset state
+### END INIT INFO
+
+
+# Source function library
+. /etc/init.d/functions
+
+
+STATE_FILE=/etc/sysconfig/ipset-state
+
+
+# only usable by root
+[ $EUID = 0 ] || exit 4
+
+
+if [ ! -x /usr/sbin/ipset ]; then
+     echo -n "ipset-state: /usr/sbin/ipset does not exist."; warning; echo
+     exit 4
+fi
+
+
+start() {
+
+
+     touch /var/lock/subsys/ipset-state
+
+
+     # Warn if sets already exist
+     if [ -n "`/usr/sbin/ipset list -name`" ]; then
+  echo -n "ipset-state: IP sets already exist."; warning; echo
+     fi
+
+
+     # Warn if there is no config file
+     if [ ! -f "$STATE_FILE" ]; then
+  echo -n "ipset-state: No saved IP set state to restore."; warning; echo
+  return 0
+     fi
+
+
+     echo -n "ipset-state: Loading saved IP set state: "
+     /usr/sbin/ipset -exist restore < "$STATE_FILE"
+     ret=$?
+     [ $ret -eq 0 ] && success || failure
+     echo
+     return $ret
+}
+
+
+save() {
+     echo -n "ipset-state: Saving IP set state: "
+     /usr/sbin/ipset save > "$STATE_FILE"
+     ret=$?
+     [ $ret -eq 0 ] && success || failure
+     echo
+     return $ret
+}
+
+
+stop() {
+     save
+     ret=$?
+     rm -f /var/lock/subsys/ipset-state
+     return $ret
+}
+
+
+status() {
+     echo "ipset-state: IP sets:"
+     /usr/sbin/ipset list -name | /bin/sed 's/^/ /'
+
+
+     if [ -f /var/lock/subsys/ipset-state ]; then
+  echo "ipset-state: Subsystem locked."
+  return 0
+     else
+  echo "ipset-state: Subsystem NOT locked."
+  return 3
+     fi
+}
+
+
+restart() {
+
+
+     echo -n "ipset-state: Flushing all IP sets: "
+     /usr/sbin/ipset flush && success || failure
+     echo
+
+
+     echo -n "ipset-state: Destroying all IP sets: "
+     /usr/sbin/ipset -quiet destroy && success || failure
+     echo
+
+
+     start
+     return $?
+}
+
+
+case "$1" in
+     start)
+  [ -f /var/lock/subsys/ipset-state ] && exit 0
+  start
+  RETVAL=$?
+  ;;
+     stop)
+  stop
+  RETVAL=$?
+  ;;
+     restart|reload|force-reload)
+  restart
+  RETVAL=$?
+  ;;
+     condrestart|try-restart)
+  [ ! -f /var/lock/subsys/ipset-state ] && exit 0
+  restart
+  RETVAL=$?
+  ;;
+     status)
+  status
+  RETVAL=$?
+  ;;
+     save)
+  save
+  RETVAL=$?
+  ;;
+     *)
+  echo "Usage: ipt-state {start|stop|restart|condrestart|status|save}"
+  RETVAL=2
+  ;;
+esac
+
+
+exit $RETVAL

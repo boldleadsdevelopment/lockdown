@@ -1,4 +1,4 @@
-# [Lockdown](https://github.com/boldleadsdevelopment/lockdown)
+# [Lockdown](https://boldleadsdevelopment.github.io//lockdown)
 ## v0.1 PRE-BETA
 
 
@@ -897,6 +897,8 @@ bin/ld-accept --help
     - You are responsible for your own actions.
   * Is this software related to Fail2Ban, IP Set, IP Tables or X?
     - Only insofar as it uses them.
+  * Does this software alter Fail2Ban, IP Set, IP Tables or X?
+    - No.
   * Will using this suite of software cure my DDOS problem?
     - It will most certainly help.  Of course, it does not actually perform rate limiting itself.  However, if you have rate limiting configured and this is running on an Nginx server, then IPs that Nginx blocks for exceeding the limit will be added to the Fail2Ban IP set if those blocks are logged.
   * Will this software stop hackers?
@@ -915,21 +917,17 @@ Bug reports and code contributions are welcome.
 
 ## External Sources
 
-[Execution Environment's IP](http://bot.whatismyipaddress.com/)
+* [Execution Environment's IP](http://bot.whatismyipaddress.com/)
 
-[IPv4 Full Bogons](http://www.team-cymru.org/Services/Bogons/fullbogons-ipv4.txt)
-[IPv4 Full Bogons - alternate](https://www.countryipblocks.net/bogons/cidr_ipv4_bogons.txt)
-[IPv6 Full Bogons - future use](http://www.team-cymru.org/Services/Bogons/fullbogons-ipv6.txt)
-[The German's Blocklist](https://lists.blocklist.de/lists/all.txt)
+* [IPv4 Full Bogons](http://www.team-cymru.org/Services/Bogons/fullbogons-ipv4.txt)
+* [IPv4 Full Bogons - alternate](https://www.countryipblocks.net/bogons/cidr_ipv4_bogons.txt)
+* [IPv6 Full Bogons - future use](http://www.team-cymru.org/Services/Bogons/fullbogons-ipv6.txt)
+* [The German's Blocklist](https://lists.blocklist.de/lists/all.txt)
 
-[Country Lists](http://www.iwik.org/ipcountry/<country code uppercase>.cidr)
-[Country Lists - Alternate -Single](http://ipdeny.com/ipblocks/data/aggregated/<country code lowercase>-aggregated.zone)
-[Country Lists - Alternate - All](http://www.ipdeny.com/ipblocks/data/countries/all-zones.tar.gz)
-[Country Lists IPv6](http://www.ipdeny.com/ipv6/ipaddresses/blocks/ipv6-all-zones.tar.gz)
+* [Country Lists](http://www.iwik.org/ipcountry/<country code uppercase>.cidr)
+* [Country Lists - Alternate -Single](http://ipdeny.com/ipblocks/data/aggregated/<country code lowercase>-aggregated.zone)
+* [Country Lists - Alternate - All](http://www.ipdeny.com/ipblocks/data/countries/all-zones.tar.gz)
+* [Country Lists IPv6](http://www.ipdeny.com/ipv6/ipaddresses/blocks/ipv6-all-zones.tar.gz)
 
-[GeoIP Country](http://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip)
-[GeoIP ASN](http://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN-CSV.zip)
-
---
-
-<3
+* [GeoIP Country](http://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip)
+* [GeoIP ASN](http://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN-CSV.zip)
