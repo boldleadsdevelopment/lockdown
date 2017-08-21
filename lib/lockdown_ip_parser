@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Just waiting to be finished.. :)
+
+# Parse target input into pieces
+if [ 0 -eq `expr index "$TARGET_INPUT" .` ]
+then
+  if [ 0 < $TARGET_INPUT
+    && 256 > $TARGET_INPUT ]
+  then
+    TARGET="$TARGET_INPUT.0.0.0/8"
+    TARGET_LIST=$LIST_NETS
+  fi
+elif [[ $TARGET_INPUT =~ ^[1-9][0-9]{0,2}\.[1-9][0-9]{0,2}$ ]]
+  TARGET="$TARGET_INPUT.0.0/16"
+  TARGET_LIST=$LIST_NETS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){2}[1-9][0-9]{0,2}$ ]]
+  TARGET="$TARGET_INPUT.0/24"
+  TARGET_LIST=$LIST_NETS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}$ ]]
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_IPS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/32$ ]]
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_IPS
+elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/[1-9][0-9]?$ ]]
+  TARGET="$TARGET_INPUT"
+  TARGET_LIST=$LIST_NETS
+fi
+

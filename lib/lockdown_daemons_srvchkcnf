@@ -1,3 +1,4 @@
+#!/bin/bash
 #   Amazon Linux, CentOS
 #     service x start|stop|etc
 #     chkconfig x on|off

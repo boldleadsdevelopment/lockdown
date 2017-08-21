@@ -1,3 +1,4 @@
+#!/bin/bash
 # Lockdown initialization function
 lockdown_init () {
   if [ ! -d /usr/local/sbin ]

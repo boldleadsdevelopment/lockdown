@@ -1,3 +1,4 @@
+#!/bin/bash
 # Fedora, RHEL, Ubuntu
 #   systemctl start|stop|etc x
 #   systemctl enable|disable x

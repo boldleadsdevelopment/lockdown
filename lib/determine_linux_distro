@@ -1,3 +1,4 @@
+#!/bin/bash
 # Distro determination
 determine_distro () {
   if [ -f /etc/os-release ]
