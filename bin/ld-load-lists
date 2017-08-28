@@ -14,8 +14,8 @@
 #   installation.
 #
 # USAGE: 
-#   ld-load-lists [-d] [-h] [-s] [-u] [-v]
-#   ld-load-lists [--dry-run] [--help] [--silent] [--update] [--verbose]
+#   ld-load-lists [-d] [-h] [-s] [-u] [-v] [-y]
+#   ld-load-lists [--dry-run] [--help] [--silent] [--update] [--verbose] [--yes]
 #
 # DESCRIPTION:
 #   This script loads all the Lockdown lists into their appropriate places,
@@ -78,6 +78,8 @@ LISTS=(
   'whitelist-net'
 )
 SILENT=0
+VERBOSE=0
+YES=0
 
 # Save origin
 ORIGIN=`pwd`
@@ -147,7 +149,11 @@ do
       shift 1
     ;;
       -v | --verbose)
-      VERBOSE=true
+      VERBOSE=1
+      shift 1
+    ;;
+      -y | --yes)
+      YES=1
       shift 1
     ;;
       -*)

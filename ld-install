@@ -113,9 +113,9 @@ help () {
 }
 
 # Load libraries
-. lib/determine_linux_distro.fnc
-. lib/lockdown_init.fnc
-. lib/lockdown_installation_report.fnc
+. lib/determine_linux_distro
+. lib/lockdown_init
+. lib/lockdown_installation_report
 
 # Parse command line arguments into variables
 while :
@@ -286,7 +286,7 @@ case $DISTRO in
     fi
 echo "Trying iptables"
     echo $DRY_RUN service iptables start
-    $DRY_RUN service iptables start
+    $DRY_RUN service iptables start &
 echo "Tried iptables"
 echo $?
     if [ 1 -eq $? ] && [ -z $DRY_RUN ]
@@ -426,7 +426,7 @@ $DRY_RUN ipset create blacklist-countries hash:net
 $DRY_RUN ipset create whitelist-countries hash:net
 
 # Load list data into sets
-$DRY_RUN $location_bin/ld-load-lists
+$DRY_RUN $location_bin/ld-load-lists -y
 
 # Process IP Set post-process rules
 if [ -f "$SRCDIR/post-process/ipset.rules" ]
@@ -444,10 +444,6 @@ $DRY_RUN iptables -t mangle -F
 $DRY_RUN iptables -F
 # Delete non-default chains
 $DRY_RUN iptables -X
-# Set default policy to drop
-$DRY_RUN iptables -P INPUT DROP
-$DRY_RUN iptables -P FORWARD DROP
-$DRY_RUN iptables -P OUTPUT ACCEPT
 
 # Process IP Tables pre-process rules
 if [ -f "$SRCDIR/pre-process/iptables.rules" ]
@@ -484,6 +480,11 @@ do
   # If you were to use a drop target in the default outgoing policy, then
   # you would want to add an established/related output rule here as well.
 done
+
+# Set default drop policies
+$DRY_RUN iptables -P INPUT DROP
+$DRY_RUN iptables -P FORWARD DROP
+$DRY_RUN iptables -P OUTPUT ACCEPT
 
 # Process IP Tables post-process rules
 if [ -f "$SRCDIR/post-process/iptables.rules" ]
