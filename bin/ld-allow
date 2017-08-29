@@ -137,8 +137,8 @@ fi
 # Parse target input into pieces
 if [ 0 -eq `expr index "$TARGET_INPUT" .` ]
 then
-  if [ 0 < $TARGET_INPUT
-    && 256 > $TARGET_INPUT ]
+  if [ 0 < $TARGET_INPUT ]
+    && [ 256 > $TARGET_INPUT ]
   then
     TARGET="$TARGET_INPUT.0.0.0/8"
     TARGET_LIST=$LIST_NETS
