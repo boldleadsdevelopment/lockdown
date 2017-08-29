@@ -284,11 +284,8 @@ case $DISTRO in
     else
       echo "Started ipset"
     fi
-echo "Trying iptables"
     echo $DRY_RUN service iptables start
     $DRY_RUN service iptables start &
-echo "Tried iptables"
-echo $?
     if [ 1 -eq $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to start iptables, exiting."
@@ -404,8 +401,8 @@ if (( ! SILENT )) ; then echo; fi
 
 ## Initialize ipset
 # Clear IP set
-$DRY_RUN ipset flush
-$DRY_RUN ipset x
+$DRY_RUN ipset -F
+$DRY_RUN ipset -X
 
 # Process IP Set pre-process rules
 if [ -f "$SRCDIR/pre-process/ipset.rules" ]
@@ -417,10 +414,10 @@ then
 fi
 
 # Create sets
-$DRY_RUN ipset create blacklist-f2b hash:ip
-$DRY_RUN ipset create blacklist-ips hash:ip
+$DRY_RUN ipset create blacklist-f2b hash:net
+$DRY_RUN ipset create blacklist-ips hash:net
 $DRY_RUN ipset create blacklist-net hash:net
-$DRY_RUN ipset create whitelist-ips hash:ip
+$DRY_RUN ipset create whitelist-ips hash:net
 $DRY_RUN ipset create whitelist-net hash:net
 $DRY_RUN ipset create blacklist-countries hash:net
 $DRY_RUN ipset create whitelist-countries hash:net
@@ -458,7 +455,7 @@ fi
 $DRY_RUN iptables -I INPUT 1 -m conntrack --ctstate INVALID -j DROP
 # Allow all to/from loopback (lo)
 $DRY_RUN iptables -I INPUT 2 -i lo -j ACCEPT
-$DRY_RUN iptables -I OUTPUT 1 -i lo -j ACCEPT
+$DRY_RUN iptables -A OUTPUT -i lo -j ACCEPT
 # Allow established & related incoming, for outgoing 
 # connections initiated from server
 $DRY_RUN iptables -I INPUT 3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT

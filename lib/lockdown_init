@@ -17,6 +17,26 @@ lockdown_init () {
   then
     mkdir -p /etc/lockdown
   fi
+  if [ ! -d /etc/lockdown/blacklist-ips ]
+  then
+    mkdir -p /etc/lockdown/blacklist-ips
+    touch /etc/lockdown/blacklist-ips/entries.txt
+  fi
+  if [ ! -d /etc/lockdown/blacklist-net ]
+  then
+    mkdir -p /etc/lockdown/blacklist-net
+    touch /etc/lockdown/blacklist-net/entries.txt
+  fi
+  if [ ! -d /etc/lockdown/whitelist-ips ]
+  then
+    mkdir -p /etc/lockdown/whitelist-ips
+    touch /etc/lockdown/whitelist-ips/entries.txt
+  fi
+  if [ ! -d /etc/lockdown/whitelist-net ]
+  then
+    mkdir -p /etc/lockdown/whitelist-net
+    touch /etc/lockdown/whitelist-net/entries.txt
+  fi
   if [ -d /etc/lockdown ]
   then
     /bin/cp -r lists /etc/lockdown
