@@ -2,23 +2,23 @@
 # Report installation status
 installation_report () {
   # Check for executables & required directories
-  if [ -f /usr/bin/iptables ]
+  if [ ! -z `whereis iptables | cut -d: -f2` ]
   then
-    echo "/usr/bin/iptables found"
+    echo "iptables found"
   else
     "Could not find iptables, please report on Github issues"
     exit 1
   fi
-  if [ -f /usr/sbin/ipset ]
+  if [ ! -z `whereis ipset | cut -d: -f2` ]
   then
-    echo "/usr/sbin/ipset found"
+    echo "ipset found"
   else
     "Could not find ipset, please report on Github issues"
     exit 1
   fi
-  if [ -f /usr/bin/fail2ban-client ]
+  if [ ! -z `whereis fail2ban-server | cut -d: -f2` ]
   then
-    echo "/usr/bin/fail2ban-client found"
+    echo "fail2ban-server found"
   else
     echo "Could not find fail2ban, please report on Github issues"
     exit 1

@@ -434,8 +434,8 @@ then
   echo "Rules file $1 not found, skipping"
 fi
 
-## Initialize iptables
 # Flush nat, mangle, all chains
+# Might need to move this above ipset reset but that might lock us out :)
 $DRY_RUN iptables -t nat -F
 $DRY_RUN iptables -t mangle -F
 $DRY_RUN iptables -F
@@ -455,17 +455,16 @@ fi
 $DRY_RUN iptables -I INPUT 1 -m conntrack --ctstate INVALID -j DROP
 # Allow all to/from loopback (lo)
 $DRY_RUN iptables -I INPUT 2 -i lo -j ACCEPT
-$DRY_RUN iptables -A OUTPUT -i lo -j ACCEPT
 # Allow established & related incoming, for outgoing 
 # connections initiated from server
 $DRY_RUN iptables -I INPUT 3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # Create set matching rules
-$DRY_RUN iptables -I INPUT 4 -m set --match-set whitelist-ips -J ACCEPT
-$DRY_RUN iptables -I INPUT 5 -m set --match-set blacklist-ips -J DROP
-$DRY_RUN iptables -I INPUT 6 -m set --match-set whitelist-net -J ACCEPT
-$DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net -J DROP
-$DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries -J ACCEPT
-$DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries -J DROP
+$DRY_RUN iptables -I INPUT 4 -m set --match-set whitelist-ips src -j ACCEPT
+$DRY_RUN iptables -I INPUT 5 -m set --match-set blacklist-ips src -j DROP
+$DRY_RUN iptables -I INPUT 6 -m set --match-set whitelist-net src -j ACCEPT
+$DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net src -j DROP
+$DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries src -j ACCEPT
+$DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries src -j DROP
 # Create global inlets
 for port in ${PORTS[@]}
 do
