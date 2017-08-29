@@ -148,18 +148,23 @@ then
     TARGET_LIST=$LIST_NETS
   fi
 elif [[ $TARGET_INPUT =~ ^[1-9][0-9]{0,2}\.[1-9][0-9]{0,2}$ ]]
+then
   TARGET="$TARGET_INPUT.0.0/16"
   TARGET_LIST=$LIST_NETS
 elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){2}[1-9][0-9]{0,2}$ ]]
+then
   TARGET="$TARGET_INPUT.0/24"
   TARGET_LIST=$LIST_NETS
 elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}$ ]]
+then
   TARGET="$TARGET_INPUT"
   TARGET_LIST=$LIST_IPS
 elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/32$ ]]
+then
   TARGET="$TARGET_INPUT"
   TARGET_LIST=$LIST_IPS
 elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/[1-9][0-9]?$ ]]
+then
   TARGET="$TARGET_INPUT"
   TARGET_LIST=$LIST_NETS
 fi
@@ -179,7 +184,6 @@ if [ ! -z `ipcalc -c $TARGET` ] ; then
 fi
 
 # Execution commands
-CMD="ipset test $set $value || ipset add $SET $VALUE"
-$DRY_RUN "$CMD"
+$DRY_RUN ipset test $TARGET $TARGET_LIST || $DRY_RUN ipset add $TARGET $TARGET_LIST
 
 exit 0
