@@ -97,6 +97,8 @@ help () {
 
 # Load a set of country data into the appropriate IP Set list
 load_country_data () {
+  list=$1
+  country_code=$2
   if [ -f "$location_lists/countries/$country_code.zone" ]
   then
     if (( ! SILENT )) 
@@ -243,13 +245,13 @@ do
 done
 
 # Load country data
-for country_code in $countries_bad
+for country_code in ${countries_bad[@]}
 do
-  load_country_data blacklist country_code $DRY_RUN
+  load_country_data blacklist $country_code $DRY_RUN
 done
-for country_code in $countries_good
+for country_code in ${countries_good[@]}
 do
-  load_country_data whitelist country_code $DRY_RUN
+  load_country_data whitelist $country_code $DRY_RUN
 done
 
 exit 0
