@@ -284,8 +284,7 @@ case $DISTRO in
     else
       echo "Started ipset"
     fi
-    echo $DRY_RUN service iptables start
-    $DRY_RUN service iptables start &
+    $DRY_RUN service iptables start && echo
     if [ 1 -eq $? ] && [ -z $DRY_RUN ]
     then
         echo "Failed to start iptables, exiting."
@@ -399,10 +398,11 @@ then
 fi
 if (( ! SILENT )) ; then echo; fi
 
-## Initialize ipset
 # Clear IP set
+$DRY_RUN service iptables stop && echo
 $DRY_RUN ipset -F
 $DRY_RUN ipset -X
+$DRY_RUN service iptables start && echo
 
 # Process IP Set pre-process rules
 if [ -f "$SRCDIR/pre-process/ipset.rules" ]
@@ -435,9 +435,8 @@ then
 fi
 
 # Flush nat, mangle, all chains
-# Might need to move this above ipset reset but that might lock us out :)
-#$DRY_RUN iptables -t nat -F # Cloud stuff relies on this! :x
-#$DRY_RUN iptables -t mangle -F # Cloud stuff relies on this! :x
+#$DRY_RUN iptables -t nat -F # Cloud stuff might rely on this! :x
+#$DRY_RUN iptables -t mangle -F # Cloud stuff might rely on this! :x
 $DRY_RUN iptables -F
 # Delete non-default chains
 $DRY_RUN iptables -X

@@ -32,6 +32,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Variables
+VERBOSE=0
+
 # Help function
 help () { 
   echo "Description:"
@@ -41,11 +44,6 @@ help () {
   echo "  `basename $0` [--force] [--verbose]"
   exit 0
 }
-
-# Check for arguments or provide help
-if [ $# -eq 0 ] ; then
-  help
-fi
 
 # Save origin
 ORIGIN=`pwd`
@@ -59,7 +57,7 @@ do
       shift 1
     ;;
       -v | --verbose)
-    VERBOSE=true
+    VERBOSE=1
     shift 1
     ;;
       -*)
@@ -72,21 +70,10 @@ do
     esac
 done
 
-# Validate required arguments
-
-# Set necessary defaults
-
 # Check verbosity
-if [ -v VERBOSE ] ; then
+if (( VERBOSE )) ; then
   set -v
 fi
-
-# Execution commands
-for set in $SETS
-do
-  ipset test "$set" $TARGET
-done
-# Grep IP Tables
 
 
 

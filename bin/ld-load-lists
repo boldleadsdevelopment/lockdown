@@ -248,6 +248,7 @@ do
 done
 
 # Load country data
+# TODO Loop here!
 load_country_data blacklist $countries_bad $DRY_RUN
 load_country_data whitelist $countries_good $DRY_RUN
 

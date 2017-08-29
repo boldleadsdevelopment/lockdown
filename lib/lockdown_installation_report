@@ -37,11 +37,11 @@ installation_report () {
     "Could not find Lockdown configuration files, please report on Github issues"
     exit 1
   fi
-  if [ -d /usr/share/lockdown ]
+  if [ -d /usr/local/share/lockdown ]
   then
-    echo "/usr/share/lockdown found"
+    echo "/usr/local/share/lockdown found"
   else
-    "Could not find Lockdown lists, please report on Github issues"
+    "Could not find Lockdown shared files, please report on Github issues"
     exit 1
   fi
   if [ -f /usr/local/sbin/ld-allow ]
@@ -49,46 +49,6 @@ installation_report () {
     echo "/etc/lockdown found"
   else
     "Could not find Lockdown configuration files, please report on Github issues"
-    exit 1
-  fi
-
-  # Check conflicting services are not running
-  if (( `pidof nftables` ))
-  then
-    "nftables process found, please report on Github issues"
-    exit 1
-  else
-    echo "nftables not running"
-  fi
-  if (( `pidof firewalld` ))
-  then
-    "firewalld process found, please report on Github issues"
-    exit 1
-  else
-    echo "firewalld not running"
-    exit 1
-  fi
-
-  # Check required services are running
-  if (( `pidof iptables` ))
-  then
-    echo "iptables is running"
-  else
-    "iptables process not found, please report on Github issues"
-    exit 1
-  fi
-  if (( `pidof ipset` ))
-  then
-    echo "ipset is running"
-  else
-    "ipset process not found, please report on Github issues"
-    exit 1
-  fi
-  if (( `pidof fail2ban-server` ))
-  then
-    echo "fail2ban-server is running"
-  else
-    "fail2ban-server process not found, please report on Github issues"
     exit 1
   fi
 
@@ -104,16 +64,19 @@ installation_report () {
   # Display success message and show user relevant files
   echo
   echo
-  echo "Success!"
   echo "Lockdown executables are in /usr/local/sbin and start with ld-"
-  echo "ls /usr/local/sbin/ld-*:"
+  echo ">> ls /usr/local/sbin/ld-*:"
   ls /usr/local/sbin/ld-*
-  echo "Lockdown configuration files are in /etc/lockdown"
-  echo "ls /etc/lockdown:"
-  ls /etc/lockdown
-  echo "Lockdown blacklist & country files are in /usr/share/lockdown"
-  echo "ls /usr/share/lockdown:"
-  ls /usr/share/lockdown
   echo
+  echo "Lockdown configuration files are in /etc/lockdown"
+  echo ">> ls /etc/lockdown:"
+  ls /etc/lockdown
+  echo
+  echo "Lockdown blacklist & country files are in /usr/share/lockdown"
+  echo ">> ls /usr/share/lockdown:"
+  ls /usr/local/share/lockdown
+  echo
+  echo "Success!"
   echo "May the force of my ban hammer be with you! - @iDoMeteor"
+  echo
 }
