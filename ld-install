@@ -436,8 +436,8 @@ fi
 
 # Flush nat, mangle, all chains
 # Might need to move this above ipset reset but that might lock us out :)
-$DRY_RUN iptables -t nat -F
-$DRY_RUN iptables -t mangle -F
+#$DRY_RUN iptables -t nat -F # Cloud stuff relies on this! :x
+#$DRY_RUN iptables -t mangle -F # Cloud stuff relies on this! :x
 $DRY_RUN iptables -F
 # Delete non-default chains
 $DRY_RUN iptables -X
