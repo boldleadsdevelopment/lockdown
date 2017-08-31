@@ -235,7 +235,7 @@ then
   then
     echo "Downloading latest blacklists & country CIDRs."
   fi
-  $DRY_RUN /usr/local/sbin/ld-update-lists -f
+  $DRY_RUN /usr/sbin/ld-update-lists -f
 fi
 if (( ! SILENT )) ; then echo; fi
 

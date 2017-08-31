@@ -44,7 +44,7 @@ installation_report () {
     "Could not find Lockdown shared files, please report on Github issues"
     exit 1
   fi
-  if [ -f /usr/local/sbin/ld-allow ]
+  if [ -f /usr/sbin/ld-allow ]
   then
     echo "/etc/lockdown found"
   else
@@ -53,7 +53,7 @@ installation_report () {
   fi
 
   # Make sure everything is A-OK (ld-test should exit 0 status w/no output)
-  if (( `/usr/local/sbin/ld-test` ))
+  if (( `/usr/sbin/ld-test` ))
   then
     "Lockdown test failed, please report on Github issues"
     exit 1
@@ -64,9 +64,9 @@ installation_report () {
   # Display success message and show user relevant files
   echo
   echo
-  echo "Lockdown executables are in /usr/local/sbin and start with ld-"
-  echo ">> ls /usr/local/sbin/ld-*:"
-  ls /usr/local/sbin/ld-*
+  echo "Lockdown executables are in /usr/sbin and start with ld-"
+  echo ">> ls /usr/sbin/ld-*:"
+  ls /usr/sbin/ld-*
   echo
   echo "Lockdown configuration files are in /etc/lockdown"
   echo ">> ls /etc/lockdown:"

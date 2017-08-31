@@ -1,21 +1,25 @@
 #!/bin/bash
 # Lockdown initialization function
 lockdown_init () {
-  if [ ! -d /usr/local/sbin ]
+  if [ ! -d /usr/sbin ]
   then
-    mkdir -p /usr/local/sbin
+    mkdir -p /usr/sbin
   fi
-  if [ -d /usr/local/sbin ]
+  if [ -d /usr/sbin ]
   then
     chmod u+x bin/*
-    cp bin/* /usr/local/sbin
+    cp bin/* /usr/sbin
   else
-    echo "Could not create or access /usr/local/sbin, installation cannot continue"
+    echo "Could not create or access /usr/sbin, installation cannot continue"
     exit 1
   fi
   if [ ! -d /etc/lockdown ]
   then
     mkdir -p /etc/lockdown
+  fi
+  if [ ! -d /etc/lockdown/archives ]
+  then
+    mkdir -p /etc/lockdown/archives
   fi
   if [ ! -d /etc/lockdown/blacklist-ips ]
   then

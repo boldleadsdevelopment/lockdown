@@ -90,8 +90,8 @@ help () {
   echo "  Loads Lockdown and user lists into their proper IP sets.  Will update"
   echo "  lists in accordance with configuration file and command line settings."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-s] [-u] [-v]"
-  echo "  `basename $0` [--dry-run] [--help] [--silent] [--update] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-s] [-u] [-v] [-y]"
+  echo "  `basename $0` [--dry-run] [--help] [--silent] [--update] [--verbose] [--yes]"
   exit 0
 }
 

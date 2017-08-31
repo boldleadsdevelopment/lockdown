@@ -59,7 +59,7 @@ Before you install, you should probably edit the `confs/lockdown.conf` file.  Wh
   * Fail2Ban will be started
   * Firewalld will be disabled on system boot if enabled
   * Fail2Ban, IPSet and IPTables will be enabled  on system boot if disabled
-  * Scripts from bin/ will be copied to /usr/local/sbin
+  * Scripts from bin/ will be copied to /usr/sbin
   * Configuration file and lists will be copied to /etc/lockdown
   * A report will be written to ./setup.log and emailed to the address configured in the config file
 
@@ -152,7 +152,7 @@ countries_bad=(
 )
 
 # Location of Lockdown files
-location_bin=/usr/local/sbin
+location_bin=/usr/sbin
 location_conf=/etc/lockdown/conf
 location_lists=/etc/lockdown/lists
 location_logs=/var/log/lockdown
