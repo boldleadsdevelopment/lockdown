@@ -1,0 +1,18 @@
+[Unit]
+Description=IPv6 firewall with ip6tables
+After=syslog.target
+AssertPathExists=/etc/sysconfig/ip6tables
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/iptables/ip6tables.init start
+ExecReload=/usr/libexec/iptables/ip6tables.init reload
+ExecStop=/usr/libexec/iptables/ip6tables.init stop
+Environment=BOOTUP=serial
+Environment=CONSOLETYPE=serial
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=basic.target
