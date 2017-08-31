@@ -6,11 +6,17 @@
 #
 
 IPSET=ipset
-IPSET_BIN=/usr/sbin/${IPSET}
-IPSET_DATA=/etc/${IPSET}/${IPSET}
+if [ -f /usr/sbin/${IPSET} ]
+then
+  IPSET_BIN=/usr/sbin/${IPSET}
+  IPSET_DATA=/etc/${IPSET}
+else
+  IPSET_BIN=/sbin/${IPSET}
+  IPSET_DATA=/etc/${IPSET}
+fi
 
 IPTABLES_CONFIG=/etc/sysconfig/iptables-config
-IP6TABLES_CONFIG=${IPTABLES_CONFIG/iptables/ip6tables}
+IPTABLES_CONFIG=/etc/sysconfig/ip6tables-config
 
 TMP_FIFO=/tmp/${IPSET}.$$
 
@@ -163,8 +169,8 @@ save() {
 	
 	    if [[ $? -ne 0 ]]; then
 		if [[ -f $IPSET_DATA ]]; then
-		    cp -f --preserve=timestamps $IPSET_DATA $IPSET_DATA.save \
-			&& chmod 600 $IPSET_DATA.save \
+		    cp -f --preserve=timestamps $IPSET_DATA $IPSET_DATA.conf \
+			&& chmod 600 $IPSET_DATA.conf \
 			|| ret=1
 		fi
 		if [[ $ret -eq 0 ]]; then

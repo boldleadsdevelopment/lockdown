@@ -351,6 +351,7 @@ case $DISTRO in
     #     systemctl enable|disable x
     # Begin starting services
     if (( ! SILENT )) ; then echo "Starting systemctl starts for $DISTRO"; fi
+    $DRY_RUN systemctl daemon-reload
     $DRY_RUN systemctl start fail2ban
     if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
