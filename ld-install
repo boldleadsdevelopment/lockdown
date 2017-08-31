@@ -223,15 +223,28 @@ then
     if (( ! SILENT )) ; then echo "Output location $SAVE_PATH does not exist, creating"; fi
     mkdir -p "$SAVE_PATH"
   fi
-  $DRY_RUN tar czf "$SAVE_PATH/ld-pre-install-backup-$DATE.tar.gz" \
-    /etc/fail2ban* \
-    /etc/ipset* \
-    /etc/lockdown* \
-    /etc/sysconfig/ip?tables*
+  BACKUP_FILES=()
+  if [ -d "/etc/fail2ban" ]
+  then
+    BACKUP_FILES+=('/etc/fail2ban*')
+  fi
+  if [ -f "/etc/ipset.conf" ]
+  then
+    BACKUP_FILES+=('/etc/ipset*')
+  fi
+  if [ -d "/etc/lockdown" ]
+  then
+    BACKUP_FILES+=('/etc/lockdown*')
+  fi
+  if [ -f "/etc/sysconfig/iptables.conf" ]
+  then
+    BACKUP_FILES+=('/etc/sysconfig/ip?tables*')
+  fi
+  $DRY_RUN tar czf "$SAVE_PATH/ld-pre-install-backup-$DATE.tar.gz" $BACKUP_FILES
 fi
 
 ## Begin Installations!!
-if [ 'yum' = $PACKAGE_MANAGER ] || [ 'dnf' = $PACKAGE_MANAGER ]
+if [ 'yum' = $PACKAGE_MANAGER ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $EPEL
 fi
@@ -239,9 +252,17 @@ if [ ! -f /usr/bin/iptables ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $IPTABLES
 fi
+if [ 'dnf' = $PACKAGE_MANAGER ]
+then
+  $DRY_RUN $PACKAGE_MANAGER install $YES iptables-services iptables-utils
+fi
 if [ ! -f /usr/sbin/ipset ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $IPSET
+fi
+if [ 'dnf' = $PACKAGE_MANAGER ]
+then
+  $DRY_RUN $PACKAGE_MANAGER install $YES ipset-service
 fi
 if [ ! -f /usr/bin/fail2ban-server ]
 then
@@ -364,19 +385,25 @@ case $DISTRO in
     # Begin enabling services
     if (( ! SILENT )) ; then echo "Enabling services for $DISTRO"; fi
     $DRY_RUN systemctl enable fail2ban
-    if (( `systemctl is-enabled fail2ban` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled fail2ban)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
         echo "Failed to enable fail2ban, exiting."
+	exit 1
     fi
     $DRY_RUN systemctl enable ipset
-    if (( `systemctl is-enabled ipset` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled ipset)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
-        echo "Failed to enable fail2ban, exiting."
+        echo "Failed to enable ipset, exiting."
+	exit 1
     fi
     $DRY_RUN systemctl enable iptables
-    if (( `systemctl is-enabled iptables` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled iptables)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
-        echo "Failed to enable fail2ban, exiting."
+        echo "Failed to enable iptables, exiting."
+	exit 1
     fi
     if (( ! SILENT )) ; then echo "Service configuration completed successfully!"; fi
   ;;
