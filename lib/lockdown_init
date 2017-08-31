@@ -50,12 +50,17 @@ lockdown_init () {
     /bin/cp -r pre-process /etc/lockdown
     /bin/cp -r etc/ipset.conf /etc/
     chown root:root /etc/ipset.conf
-    /bin/cp -r etc/init.d/ipset /etc/init.d
     chown -R root:root /etc/lockdown /etc/init.d/ipset
     chmod u+x /etc/init.d/ipset
   else
     echo "Could not create or access /etc/lockdown, installation cannot continue"
     exit 1
+  fi
+  if [ -d /etc/systemd ]
+  then
+    /bin/cp -r usr/* /usr/
+  else
+    /bin/cp etc/init.d/ipset /etc/init.d/
   fi
   if [ ! -d /usr/local/share/lockdown ]
   then
