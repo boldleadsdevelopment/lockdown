@@ -3,24 +3,24 @@
 
 #===============================================================================
 #
-# FILE: 
+# FILE:
 #   ld-allow-all
 #
-# REVISION:  
+# REVISION:
 #   001
 #
 # WHEN TO USE:
 #   When you have some serious issues and need everything open in a hurry!
 #
-# USAGE: 
+# USAGE:
 #   ld-allow-all [-d] [-h] [-n] [-p] [-t /tmp] [-v] [-y]
-#   ld-allow-all [--dry-run] [--help] [--notmp] [--permanent] 
+#   ld-allow-all [--dry-run] [--help] [--notmp] [--permanent]
 #                            [--tmp /tmp] [--verbose] [--yes]
 #
 # DESCRIPTION:
 #   This script will backup your current configuration to a temporary location
 #   and completely reboot IP tables and IP set with accept all policies as well
-#   as clear all temporary data from Fail2Ban.  The temporary location may be 
+#   as clear all temporary data from Fail2Ban.  The temporary location may be
 #   specified by the user, and will be output in the report.
 #
 #   Current saved configurations will only be reset if the permanent option
@@ -64,7 +64,7 @@ VERBOSE=0
 YES=0
 
 # Help function
-help () { 
+help () {
   echo "Description:"
   echo "  This script will backup your current configuration to a temporary location"
   echo "  and completely reboot IP tables and IP set with accept all policies as well"
@@ -129,16 +129,16 @@ do
     esac
 done
 
-# Check verbosity
-if (( VERBOSE )) ; then
-  set -v
-fi
-
 # Do not allow accidental usage
 if (( ! YES ))
 then
   echo "Cautiously refusing to proceed without --yes."
   help
+fi
+
+# Check verbosity
+if (( VERBOSE )) ; then
+  set -v
 fi
 
 # Save and back currently saved configuration if making permanent
