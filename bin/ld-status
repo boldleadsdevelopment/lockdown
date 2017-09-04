@@ -40,21 +40,17 @@ IFS=$'\n\t'
 
 # Values
 DRY_RUN=''
+VERBOSE=0
 
 # Help function
 help () { 
   echo "Description:"
   echo "  Show daemon status of IP Tables, IP Set and Fail2Ban"
   echo "Usage:"
-  echo "  `basename $0` [-d] [-f] [-v]"
-  echo "  `basename $0` [--dry-run] [--force] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-v]"
+  echo "  `basename $0` [--dry-run] [--help] [--verbose]"
   exit 0
 }
-
-# Check for arguments or provide help
-if [ $# -eq 0 ] ; then
-  help
-fi
 
 # Save origin
 ORIGIN=`pwd`
@@ -69,9 +65,10 @@ do
     ;;
       -h | --help)
       help
+      exit 0
     ;;
       -v | --verbose)
-      VERBOSE=true
+      VERBOSE=1
       shift 1
     ;;
       -*)
@@ -85,7 +82,7 @@ do
 done
 
 # Check verbosity
-if [ -v VERBOSE ] ; then
+if (( VERBOSE )) ; then
   set -v
 fi
 
