@@ -92,7 +92,6 @@ GAMIN='gamin'
 IPSET='ipset'
 IPTABLES='iptables'
 PACKAGE_MANAGER='yum'
-PORTS=$ports
 SAVE_PATH=`pwd`
 SILENT=0
 YES=''
@@ -493,7 +492,7 @@ $DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net src -j DROP
 $DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries src -j ACCEPT
 $DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries src -j DROP
 # Create global inlets
-for port in ${PORTS[@]}
+for port in ${ports[@]}
 do
   # This rule avoids connection tracking in favor of optimal processing 
   # speed which is the same reason we allow all outgoing traffic rather 

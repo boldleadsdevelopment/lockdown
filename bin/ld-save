@@ -1,44 +1,41 @@
 #!/bin/bash
-#ld-export
+#ld-save
 
 #===============================================================================
 #
 # FILE: 
-#   ld-export
+#   ld-save
 #
 # REVISION:  
 #   001
 #
 # WHEN TO USE:
-#   When you want to save your current configurations to some specific location.
+#   When you want to make your current running configuration permanent.
 #
 # USAGE: 
-#   ld-export
-#   ld-export [--etc]
-#   ld-export [--path /path/to/export] [--tmp /tmp]
-#   ld-export [-e]
-#   ld-export [-p /path/to/export] [-t /tmp]
+#   ld-save -y
+#   ld-save [-d] [-n] [-p] [-v] -y
+#   ld-save [--dry-run] [--no-backup] [--path] [--verbose] --yes
 #
 # DESCRIPTION:
-#   Saves current configuration of IP Tables, IP Set and Fail2Ban as a set of
-#   files and directories in the directory specified (or pwd when not set).
-#   If any of the services are not running, their existing configuration file
-#   from /etc will be used if it exists.
+#   Saves current running configurations of IP Tables and IP Set to /etc
+#   to so that they will be used when the services are started at boot or
+#   restarted or stopped/started at any time.
 #
 # OPTIONS:
 #   -d | --dry-run
 #      Echos the commands that would be executed rather than executing them
-#   -e | --etc
-#      Export currently running config of IP Tables & IP Set to /etc
 #   -h | --help
 #      Run help function and exit
+#   -n | --no-backup
+#      Do not backup
 #   -p | --path
-#      Path or filename to save data to
-#   -t | --tmp
-#      Default = /tmp
-#      Provide an alternate location to save current configuration
+#      Path or filename to save backup to
 #   -v | --verbose
 #      Output each line of the script after validations are parsed
+#   -y | --yes
+#      **Requred**
+#      Required to actually save as a safeguard
 #
 # AUTHOR: Jason (@iDoMeteor)
 #===============================================================================
@@ -48,27 +45,22 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Values
-COMPRESS=1
-DATE=`date +%Y%m%d%H%M%S`
-ETC=0
+BACKUP=1
 DRY_RUN=''
-TAG="lockdown-$DATE"
 ORIGIN="`pwd`"
-PERMANENT=0
 SAVE_PATH="`pwd`"
-TMP_LOCATION="/tmp"
 VERBOSE=0
+YES=0
 
 # Help function
 help () { 
   echo "Description:"
-  echo "  Saves current configuration of IP Tables, IP Set and Fail2Ban as a set of"
-  echo "  files and directories in the directory specificed (or /etc when not set)."
-  echo "  If any of the services are not running, their existing configuration file"
-  echo "  from /etc will be used if it exists."
+  echo "  Write current running configurations of IP Tables and IP Set to /etc"
+  echo "  so that they will be used when the services are started at boot or"
+  echo "  or stopped/started at any time."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-p] [-v]"
-  echo "  `basename $0` [--dry-run] [--help] [--path /save/path] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-p] [-v] [-y]"
+  echo "  `basename $0` [--dry-run] [--help] [--path /save/path] [--verbose] [--yes]"
   exit 0
 }
 
@@ -81,31 +73,27 @@ fi
 while :
 do
     case ${1:-} in
-      -c | --compress)
-      COMPRESS=1
-      shift 1
-    ;;
       -d | --dry-run)
       DRY_RUN='echo'
-      shift 1
-    ;;
-      -e | --etc)
-      ETC=1
       shift 1
     ;;
       -h | --help)
       help
     ;;
+      -n | --no-backup)
+      BACKUP=0
+      shift 1
+    ;;
       -p | --path)
       SAVE_PATH=$2
       shift 2
     ;;
-      -t | --tmp)
-      TMP_LOCATION=$2
-      shift 2
-    ;;
       -v | --verbose)
       VERBOSE=1
+      shift 1
+    ;;
+      -y | --yes)
+      YES=1
       shift 1
     ;;
       -*)
@@ -118,67 +106,26 @@ do
     esac
 done
 
-# Check save path exists
-if [ ! -d "$SAVE_PATH" ]
-then
-  echo "Output location $SAVE_PATH could not be found, cannot continue"
-  exit 1
-fi
-
 # Check verbosity
 if (( VERBOSE ))
 then
   set -v
 fi
 
-# Special case scenario
-if (( ETC ))
-then
-  $DRY_RUN iptables-save > /etc/sysconfig/iptables
-  $DRY_RUN ipset -S > /etc/ipset.conf
-  exit 0
-fi
-
-if [ "/etc" -eq "$SAVE_PATH" ]
-then
-  echo "You must use ld-export -e or ld-export --etc to export to /etc"
-  help
-  exit 1
-fi
-
 # Backup currently saved configuration
-if (( ETC ))
+if (( BACKUP ))
 then
-  $DRY_RUN tar czf "$SAVE_PATH/$TAG.tar.gz" \
-    /etc/sysconfig/ip?tables* \
-    /etc/ipset* \
-    /etc/fail2ban* \
-    /etc/lockdown*
-else
-  # Set up for running configuration export
-  $DRY_RUN mkdir -p "$TMP_LOCATION/$TAG/etc"
-  $DRY_RUN cd "$TMP_LOCATION/$TAG"
-  # Save IP Tables & IP Set rules to temp location
-  $DRY_RUN iptables-save > iptables.bak
-  $DRY_RUN ipset -S > etc/ipset.conf
-  # Copy Fail2Ban configs to temp location
-  $DRY_RUN /bin/cp -ar /etc/fail2ban etc/
-  # Copy Lockdown configs to temp location
-  $DRY_RUN /bin/cp -ar /etc/lockdown etc/
-
-  if (( COMPRESS ))
-  then
-    # Tar them and move them to destination
-    $DRY_RUN tar czf "$SAVE_PATH/$TAG.tar.gz" etc
-  else
-    # Move uncompressed files to save path
-    $DRY_RUN mv "$TMP_LOCATION/$TAG" "$SAVE_PATH"
-  fi
-
-  # Clean up
-  $DRY_RUN cd $ORIGIN
-  $DRY_RUN /bin/rm -rf "$TMP_LOCATION/$TAG"
+  $DRY_RUN ld-export -p $SAVE_PATH
 fi
 
+# Save running configuration of IP Tables and IP Set
+if [ -z $DRY_RUN ]
+then
+  iptables-save > /etc/sysconfig/iptables
+  ipset save > /etc/ipset.conf
+else
+  $DRY_RUN "iptables-save > /etc/sysconfig/iptables"
+  $DRY_RUN "ipset save > /etc/ipset.conf"
+fi
 
 exit 0

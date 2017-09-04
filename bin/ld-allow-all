@@ -62,11 +62,11 @@ help () {
   echo "Description:"
   echo "  This script will backup your current configuration to a temporary location"
   echo "  and completely reboot IP tables and IP set with accept all policies as well"
-  echo "  as clear all temporary data from Fail2Ban.  The temporary location may be "
-  echo "  specified by the user, and will be output in the report."
+  echo "  as stop Fail2Ban.  The temporary location may be specified by the user, and"
+  echo "  will be output in the report."
   echo
   echo "  Current saved configurations will only be reset if the permanent option"
-  echo "  is supplied."
+  echo "  is supplied.  In this case Fail2Ban will also be disabled at boot."
   echo "Usage:"
   echo "  `basename $0` [-d] [-n] [-p] [-t /tmp] [-v]"
   echo "  `basename $0` [--dry-run] [--no-tmp] [--permanent] [--tmp /tmp] [--verbose]"
@@ -150,6 +150,7 @@ done
 
 # Save configurations permanently if instructed to do so
 if (( PERMANENT )) ; then
+  # TODO: Disable F2B
   $DRY_RUN ld-save
 fi
 
