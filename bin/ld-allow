@@ -186,6 +186,9 @@ then
 fi
 
 # Execution commands
-$DRY_RUN ipset test $TARGET $TARGET_LIST || $DRY_RUN ipset add $TARGET $TARGET_LIST
+if [ -z `ipset test $TARGET_LIST $TARGET` ]
+then
+  $DRY_RUN ipset add $TARGET_LIST $TARGET
+fi
 
 exit 0
