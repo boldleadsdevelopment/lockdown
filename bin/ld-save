@@ -14,8 +14,8 @@
 #
 # USAGE: 
 #   ld-save -y
-#   ld-save [-d] [-n] [-p] [-v] -y
-#   ld-save [--dry-run] [--no-backup] [--path] [--verbose] --yes
+#   ld-save [-d] [-n] [-p] [-v] [-y]
+#   ld-save [--dry-run] [--no-backup] [--path] [--verbose] [--yes]
 #
 # DESCRIPTION:
 #   Saves current running configurations of IP Tables and IP Set to /etc
@@ -58,6 +58,9 @@ help () {
   echo "  Write current running configurations of IP Tables and IP Set to /etc"
   echo "  so that they will be used when the services are started at boot or"
   echo "  or stopped/started at any time."
+  echo
+  echo "  Omitting -y or --yes is the same as passing --help, nothing will happen."
+  echo
   echo "Usage:"
   echo "  `basename $0` [-d] [-h] [-p] [-v] [-y]"
   echo "  `basename $0` [--dry-run] [--help] [--path /save/path] [--verbose] [--yes]"
@@ -105,6 +108,13 @@ do
     ;;
     esac
 done
+
+# Do not allow accidental usage
+if (( ! YES ))
+then
+  echo "Cautiously refusing to proceed without --yes."
+  help
+fi
 
 # Check verbosity
 if (( VERBOSE ))
