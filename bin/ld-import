@@ -79,7 +79,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -n | --no-backup)
       BACKUP=0

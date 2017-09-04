@@ -70,6 +70,7 @@ help () {
   echo "Usage:"
   echo "  `basename $0` [-d] [-n] [-p] [-t /tmp] [-v]"
   echo "  `basename $0` [--dry-run] [--no-tmp] [--permanent] [--tmp /tmp] [--verbose]"
+  exit 0
 }
 
 # Check for arguments or provide help
@@ -87,7 +88,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -n | --notmp)
       TMP_LOCATION=''

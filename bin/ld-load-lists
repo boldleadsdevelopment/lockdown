@@ -135,7 +135,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -s | --silent)
       SILENT=1

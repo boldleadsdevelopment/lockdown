@@ -81,6 +81,7 @@ help () {
   echo "Usage:"
   echo "  `basename $0` [-d] [-h] [-v] <target>"
   echo "  `basename $0` [--dry-run] [--help] [--verbose] <target>"
+  exit 0
 }
 
 # Check for arguments or provide help
@@ -92,17 +93,21 @@ fi
 while :
 do
     case ${1:-} in
+      # A valid target starts with a non-zero digit
+      [1-9]*)
+      TARGET_INPUT=$1
+      shift 1
+    ;;
       -d | --dry-run)
       DRY_RUN='echo'
       shift 1
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -p | --path)
       SAVE_PATH="$1"
-      shift 1
+      shift 2
     ;;
       -v | --verbose)
       VERBOSE=1

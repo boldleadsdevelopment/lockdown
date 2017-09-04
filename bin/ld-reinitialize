@@ -106,7 +106,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -n | --no-download)
       DOWNLOAD=0

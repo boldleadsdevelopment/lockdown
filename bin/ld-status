@@ -65,7 +65,6 @@ do
     ;;
       -h | --help)
       help
-      exit 0
     ;;
       -v | --verbose)
       VERBOSE=1

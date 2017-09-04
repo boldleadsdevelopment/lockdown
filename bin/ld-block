@@ -83,6 +83,7 @@ help () {
   echo "Usage:"
   echo "  `basename $0` [-d] [-h] [-v]"
   echo "  `basename $0` [--dry-run] [--help] [--verbose]"
+  exit 0
 }
 
 # Check for arguments or provide help
@@ -105,7 +106,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -v | --verbose)
       VERBOSE=1

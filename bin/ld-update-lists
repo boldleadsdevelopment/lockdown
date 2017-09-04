@@ -103,7 +103,6 @@ do
     ;;
       -h | --help)
       help
-      exit 0
     ;;
       -n | --no-github)
       GITHUB=0

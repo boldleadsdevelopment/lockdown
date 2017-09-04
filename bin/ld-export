@@ -95,7 +95,6 @@ do
     ;;
       -h | --help)
       help
-      shift 1
     ;;
       -p | --path)
       SAVE_PATH=$2

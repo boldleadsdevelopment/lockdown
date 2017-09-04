@@ -54,18 +54,17 @@ do
     case ${1:-} in
       -h | --help)
       help
-      shift 1
     ;;
       -v | --verbose)
-    VERBOSE=1
-    shift 1
+      VERBOSE=1
+      shift 1
     ;;
       -*)
-    echo "Error: Unknown option: $1" >&2
-    exit 1
+      echo "Error: Unknown option: $1" >&2
+      exit 1
     ;;
       *)  # No more options
-    break
+      break
     ;;
     esac
 done
