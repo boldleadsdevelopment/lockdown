@@ -13,8 +13,8 @@
 #   When you are seriously panicing and need to lock er'than down now!
 #
 # USAGE:
-#   ld-block-all [-d] [-h] [-n] [-p] [-t /tmp] [-v] [-y]
-#   ld-block-all [--dry-run] [--help] [--notmp] [--permanent]
+#   ld-block-all [-d] [-h] [-i] [-n] [-p] [-t /tmp] [-v] [-y]
+#   ld-block-all [--dry-run] [--help] [--ip] [--notmp] [--permanent]
 #                            [--tmp /tmp] [--verbose] [--yes]
 #
 # DESCRIPTION:
@@ -29,6 +29,12 @@
 # OPTIONS:
 #   -d | --dry-run
 #      Echos the commands that would be executed rather than executing them
+#   -i | --ip
+#      *Required*
+#      IP of the SSH client connected to this machine, don't
+#      lock yourself out!
+#      TIP: To set this automatically, call with:
+#        ld-block-all -y -i `curl 'https://api.ipify.org?format=txt' -s`
 #   -h | --help
 #      Run help function and exit
 #   -n | --notmp
@@ -58,7 +64,7 @@ IFS=$'\n\t'
 # Values
 BACKUP=1
 DRY_RUN=''
-IP_SELF=`curl 'https://api.ipify.org?format=txt' -s`
+IP_SELF=''
 PERMANENT=0
 TMP_LOCATION='.'
 VERBOSE=0
@@ -79,8 +85,8 @@ help () {
   echo "  Omitting -y or --yes is the same as passing --help, nothing will happen."
   echo
   echo "Usage:"
-  echo "  `basename $0` [-d] [-n] [-l /tmp] [-p] [-v] [-y]"
-  echo "  `basename $0` [--dry-run] [--no-backup] [--location /tmp] [--permanent] [--verbose] [--yes]"
+  echo "  `basename $0` [-d] [-h] [-i] [-n] [-l /tmp] [-p] [-v] [-y]"
+  echo "  `basename $0` [--dry-run] [--help] [--ip] [--no-backup] [--location /tmp] [--permanent] [--verbose] [--yes]"
   exit 0
 }
 
@@ -96,6 +102,10 @@ do
       -d | --dry-run)
       DRY_RUN='echo'
       shift 1
+    ;;
+      -i | --ip)
+      IP_SELF=$2
+      shift 2
     ;;
       -h | --help)
       help
@@ -138,6 +148,13 @@ then
 fi
 
 # Check verbosity
+if [ -z $IP_SELF ] || [ ! -z `ipcalc -c $IP_SELF` ]
+then
+  echo "You must supply a valid IP with -i to prevent locking yourself out!"
+  exit 1
+fi
+
+# Check verbosity
 if (( VERBOSE )) ; then
   set -v
 fi
@@ -161,16 +178,16 @@ $DRY_RUN iptables -P OUTPUT ACCEPT
 # Clear IP set
 $DRY_RUN ipset flush
 # Allow loopback
-iptables -I INPUT 1 -i lo -j ACCEPT
+$DRY_RUN iptables -I INPUT 1 -i lo -j ACCEPT
 # Allow DNS
-iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+$DRY_RUN iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 # Whitelist own IP
-iptables -I INPUT -j ACCEPT -s $IP_SELF
-iptables -I OUTPUT -j ACCEPT -s $IP_SELF
+$DRY_RUN iptables -I INPUT -s $IP_SELF -j ACCEPT
+$DRY_RUN iptables -I OUTPUT -d $IP_SELF -j ACCEPT
 # Accept all on all chains
-iptables -P INPUT DROP
-iptables -P FORWARD DROP
-iptables -P OUTPUT DROP
+$DRY_RUN iptables -P INPUT DROP
+$DRY_RUN iptables -P FORWARD DROP
+$DRY_RUN iptables -P OUTPUT DROP
 
 # Save configurations permanently if instructed to do so
 if (( PERMANENT ))
