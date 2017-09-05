@@ -518,8 +518,8 @@ then
 fi
 
 # Add cron job
-echo "Adding daily list cron job to update lists under root user's cron tables."
-echo "17 1 * * * /usr/sbin/ld-cron-job 2>&1 # Lockdown daily list updater" >> /var/spool/cron/root
+echo "Adding daily list cron job to update lists under root user's cron tables via /etc/crontab."
+echo "17 1 * * * root /usr/sbin/ld-cron-job 2>&1 # Lockdown daily list updater" >> /etc/crontab
 
 # Installation complete, present results to user if applicable
 if [ $DRY_RUN ]
