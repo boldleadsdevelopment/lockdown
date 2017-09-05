@@ -166,7 +166,6 @@ iptables -I INPUT 1 -i lo -j ACCEPT
 iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 # Whitelist own IP
 iptables -I INPUT -j ACCEPT -s $IP_SELF
-iptables -I FORWARD -j ACCEPT -s $IP_SELF
 iptables -I OUTPUT -j ACCEPT -s $IP_SELF
 # Accept all on all chains
 iptables -P INPUT DROP
