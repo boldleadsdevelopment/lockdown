@@ -1,4 +1,4 @@
 #!/bin/bash
 #ld-cron-job
 
-/usr/bin/ld-load-lists -y
+/usr/sbin/ld-load-lists -y 2>&1
