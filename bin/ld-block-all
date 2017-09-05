@@ -85,8 +85,8 @@ help () {
   echo "  Omitting -y or --yes is the same as passing --help, nothing will happen."
   echo
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-i ssh_client_ip] [-n] [-l /tmp] [-p] [-v] [-y]"
-  echo "  `basename $0` [--dry-run] [--help] [--ip ssh_client_ip] [--no-backup] [--location /tmp] [--permanent] [--verbose] [--yes]"
+  echo "  `basename $0` [-d] [-h] [-n] [-l /tmp] [-p] [-v] [-y] -i ssh_client_ip"
+  echo "  `basename $0` [--dry-run] [--help] [--no-backup] [--location /tmp] [--permanent] [--verbose] [--yes] --ip ssh_client_ip"
   exit 0
 }
 
