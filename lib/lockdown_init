@@ -44,6 +44,10 @@ lockdown_init () {
   if [ -d /etc/lockdown ]
   then
     /bin/cp -r lists /etc/lockdown
+    if [ -d /etc/lockdown/lists ]
+    then
+      /bin/rm -r /etc/lockdown/lists
+    fi
     /bin/cp -r conf /etc/lockdown
     /bin/cp -r lists /etc/lockdown
     /bin/cp -r post-process /etc/lockdown
