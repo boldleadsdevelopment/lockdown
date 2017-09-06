@@ -14,8 +14,9 @@
 #   installation.
 #
 # USAGE: 
-#   ld-load-lists [-d] [-h] [-s] [-u] [-v] [-y]
-#   ld-load-lists [--dry-run] [--help] [--silent] [--update] [--verbose] [--yes]
+#   ld-load-lists [-d] [-h] [-n] [-s] [-u] [-v] [-y]
+#   ld-load-lists [--dry-run] [--help] [--no-save] [--silent] [--update]
+#                 [--verbose] [--yes]
 #
 # DESCRIPTION:
 #   This script loads all the Lockdown lists into their appropriate places,
@@ -27,6 +28,8 @@
 #      Echos the commands that would be executed rather than executing them
 #   -h | --help
 #      Run help function and exit
+#   -n | --no-save
+#      Do not save running configuration to /etc after loading lists
 #   -s | --silent
 #      Silent will attempt to prevent any and all output except in the event
 #      of failure.  Silent operation implies --yes and will not ask permission
@@ -77,6 +80,7 @@ LISTS=(
   'whitelist-ips'
   'whitelist-net'
 )
+SAVE=1
 SILENT=0
 VERBOSE=0
 YES=0
@@ -90,8 +94,8 @@ help () {
   echo "  Loads Lockdown and user lists into their proper IP sets.  Will update"
   echo "  lists in accordance with configuration file and command line settings."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-s] [-u] [-v] [-y]"
-  echo "  `basename $0` [--dry-run] [--help] [--silent] [--update] [--verbose] [--yes]"
+  echo "  `basename $0` [-d] [-h] [-n] [-s] [-u] [-v] [-y]"
+  echo "  `basename $0` [--dry-run] [--help] [--no-save] [--silent] [--update] [--verbose] [--yes]"
   exit 0
 }
 
@@ -135,6 +139,10 @@ do
     ;;
       -h | --help)
       help
+    ;;
+      -n | --no-save)
+      SAVE=0
+      shift 1
     ;;
       -s | --silent)
       SILENT=1
@@ -252,5 +260,11 @@ for country_code in ${countries_good[@]}
 do
   load_country_data whitelist $country_code $DRY_RUN
 done
+
+# Save running configuration
+if (( SAVE ))
+then
+  /usr/sbin/ld-save -y
+fi
 
 exit 0

@@ -10,11 +10,14 @@
 #   ld-import [--temp /tmp] ./filename.tar.gz
 #
 # DESCRIPTION:
-#   Imports previously exported configurations for IP Tables, IP Set and 
-#   Fail2Ban from a directory or tarball.  Services will be stopped,
-#   configuration imported, and then services will be started again.
+#   Imports previously exported configurations for IP Tables, IP Set,
+#   Fail2Ban and Lockdown from a directory or tarball.  Services will 
+#   be stopped, configuration imported, and services will be started again.
 #
-#   Currently running configuration will be exported if possible.
+#   This script will save the currently running configuration *and* export it
+#   unless -n or --no-backup is passed.
+#
+#   Lists will be loaded after importing.
 #
 # OPTIONS:
 #   path | filename
@@ -31,6 +34,10 @@
 #      relevant if passing a tarball to import
 #   -v | --verbose
 #      Output each line of the script after validations are parsed
+#   -x | --no-lists
+#      Do not run ld-load-lists after copying files
+#   -y | --yes
+#      *Required*
 #
 # AUTHOR: Jason (@iDoMeteor)
 #===============================================================================
@@ -44,23 +51,23 @@ BACKUP=1
 DATE=`date +%Y%m%d%H%M%S`
 DRY_RUN=''
 FILENAME=''
+LISTS=1
 ORIGIN="`pwd`"
 TARBALL=''
 TMP_LOCATION='/tmp'
 TYPE=''
 VERBOSE=0
 WORKING_DIR="lockdown-$DATE"
+YES=0
 
 # Help function
 help () { 
   echo "Description:"
   echo "  Restores previously exported (by Lockdown) configuration of IP Tables,"
-  echo "  IP Set and Fail2Ban.  An attempt will be made to back up the current"
-  echo "  configuration, but you will not be asked for confirmation to overwrite"
-  echo "  files."
+  echo "  IP Set and Fail2Ban."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-v]"
-  echo "  `basename $0` [--dry-run] [--help] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-n] [-t path/to/tmp] [-v] [-x] [-y] path|tarball"
+  echo "  `basename $0` [--dry-run] [--help] [--no-backup] [--tmp path/to/tmp] [--verbose] [--no-lists] [--yes] path|tarball"
   exit 0
 }
 
@@ -73,6 +80,22 @@ fi
 while :
 do
     case ${1:-} in
+      lockdown-*)  # Should be a filename or path
+      if [ -d $1 ]
+      then
+	TYPE='dir'
+        WORKING_DIR=$1
+        shift 1
+      elif [ -f $1 ]
+      then
+        TARBALL=$1
+	TYPE='file'
+        shift 1
+      else
+        echo "Error: Unknown target: $1" >&2
+        exit 1
+      fi
+    ;;
       -d | --dry-run)
       DRY_RUN='echo'
       shift 1
@@ -95,32 +118,33 @@ do
       fi
     ;;
       -v | --verbose)
-      VERBOSE=true
+      VERBOSE=1
+      shift 1
+    ;;
+      -x | --no-lists)
+      LISTS=0
+      shift 1
+    ;;
+      -y | --yes)
+      YES=1
       shift 1
     ;;
       -*)
       echo "Error: Unknown option: $1" >&2
       exit 1
     ;;
-      *)  # Should be a filename or path
-      if [ -d $1 ]
-      then
-	TYPE='dir'
-        WORKING_DIR=$1
-        shift 1
-      elif [ -f $1 ]
-      then
-        TARBALL=$1
-	TYPE='file'
-        shift 1
-      else
-      then
-        echo "Error: Unknown target: $1" >&2
-        exit 1
-      fi
+      *)  # No more options
+      break
     ;;
     esac
 done
+
+# Safety check
+if (( ! YES ))
+then
+  echo "Cannot continue without -y or --yes"
+  help
+fi
 
 # Check verbosity
 if (( VERBOSE ))
@@ -141,41 +165,44 @@ $DRY_RUN pidof ipset && $DRY_RUN pidof ipset | $DRY_RUN xargs kill -9
 # Backup currently saved configuration
 if (( BACKUP ))
 then
-  $DRY_RUN ld-export
+  $DRY_RUN ld-export --save
 fi
 
 # Set up temporary space if passed a tarball
-if [ $TYPE = 'file' ] && [ -f "$TARBALL" ]
+if [ $TYPE = 'file' ] && [ -f "$TARBALL" ] && [ -d "$TMP_LOCATION" ]
 then
   $DRY_RUN mkdir -p "$TMP_LOCATION/$WORKING_DIR"
   $DRY_RUN cp $TARBALL "$TMP_LOCATION/$WORKING_DIR"
   $DRY_RUN cd "$TMP_LOCATION/$WORKING_DIR"
   $DRY_RUN tar xzf *.tar.gz
-elif [ $TYPE = 'dir' ] && [ -d "$WORKING_DIR" ] 
-  $DRY_RUN cd $WORKING_DIR
+elif [ $TYPE = 'dir' ] && [ -d "$TMP_LOCATION" ] 
+then
+  $DRY_RUN mkdir -p "$TMP_LOCATION/$WORKING_DIR"
+  $DRY_RUN cd "$WORKING_DIR"
+else
+  echo "Error accessing temporary location or archive, cannot proceed."
+  exit 1
 fi
 
 # Copy files into place
 $DRY_RUN /bin/cp -rf etc/* /etc
 
-# Check for iptables backup from running config exports
-if [ -f iptables.bak ]
-then
-  $DRY_RUN iptables-restore < iptables.bak
-fi
-
 # Start services
-$DRY_RUN service fail2ban start
 $DRY_RUN service iptables start
 $DRY_RUN service ipset start
+$DRY_RUN service fail2ban start
+
+# Load lists
+if (( LISTS ))
+then
+  $DRY_RUN /usr/sbin/ld-load-lists -y
+fi
 
 # Test services
-$DRY_RUN ld-test
+$DRY_RUN /usr/sbin/ld-test
 
 # Clean up
-if [ $TYPE = 'file' ]
-then
-  $DRY_RUN /bin/rm -rf $TMP_LOCATION/$WORKING_DIR
-fi
+cd $ORIGIN
+$DRY_RUN /bin/rm -rf "$TMP_LOCATION/$WORKING_DIR"
 
 exit 0
