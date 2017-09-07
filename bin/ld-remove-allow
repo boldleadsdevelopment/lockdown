@@ -65,19 +65,18 @@ IFS=$'\n\t'
 DRY_RUN=''
 LIST_IPS='whitelist-ips'
 LIST_NETS='whitelist-net'
+ORIGIN=`pwd`
 TARGET=''
 TARGET_LIST=''
-
-# Save origin
-ORIGIN=`pwd`
+VERBOSE=0
 
 # Help function
 help () { 
   echo "Description:"
   echo "  Remove a previously allowed IP, CIDR range or subnet shortcut."
   echo "Usage:"
-  echo "  `basename $0` [-d] [-h] [-f] [-v]"
-  echo "  `basename $0` [--dry-run] [--help] [--force] [--verbose]"
+  echo "  `basename $0` [-d] [-h] [-f] [-v] target"
+  echo "  `basename $0` [--dry-run] [--help] [--force] [--verbose] target"
   exit 0
 }
 
@@ -103,7 +102,7 @@ do
       help
     ;;
       -v | --verbose)
-      VERBOSE=true
+      VERBOSE=1
       shift 1
     ;;
       -*)
@@ -121,22 +120,23 @@ do
 done
 
 # Check required IP/range target passed
-if [ -z TARGET_INPUT ] ; then
+if [ ! -n TARGET_INPUT ]
+then
   echo "Error: No target provided"
   help
   exit 1
 fi
 
 # Check verbosity
-if [ ! -n VERBOSE ] ; then
+if (( VERBOSE )) ; then
   set -v
 fi
 
 # Parse target input into pieces
 if [ 0 -eq `expr index "$TARGET_INPUT" .` ]
 then
-  if [ 0 < $TARGET_INPUT \
-    && 256 > $TARGET_INPUT ]
+  if [ 0 -lt $TARGET_INPUT ] \
+    && [ 256 -gt $TARGET_INPUT ]
   then
     TARGET="$TARGET_INPUT.0.0.0/8"
     TARGET_LIST=$LIST_NETS
@@ -157,7 +157,7 @@ elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/32$ ]]
 then
   TARGET="$TARGET_INPUT"
   TARGET_LIST=$LIST_IPS
-elif [[ $TARGET_INPUT =~ ^([1-9][0-9]{0,2}\.){3}[1-9][0-9]{0,2}\/[1-9][0-9]?$ ]]
+elif [[ $TARGET_INPUT =~ ^[1-9][0-9]{0,2}(\.[0-9]{1,3}){3}\/[1-9][0-9]?$ ]]
 then
   TARGET="$TARGET_INPUT"
   TARGET_LIST=$LIST_NETS
@@ -171,14 +171,14 @@ then
 fi
 
 # Check final target is a valid IP or range
-if [ ! -z `ipcalc -c $TARGET` ] ; then
+if [ ! -z `ipcalc -c $TARGET` ]
+then
   echo "Error: Computed target $TARGET is invalid"
   help
   exit 1
 fi
 
 # Execution commands
-CMD="ipset test $TARGET_LIST $TARGET && ipset del $TARGET_LIST $TARGET"
-$DRY_RUN "$CMD"
+$DRY_RUN ipset del $TARGET_LIST $TARGET && echo "Removed $TARGET from $TARGET_LIST"
 
 exit 0
