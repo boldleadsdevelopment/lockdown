@@ -18,10 +18,10 @@
 #   ld-stop [--dry-run] [--help] [--verbose]
 #
 # DESCRIPTION:
-#   Stops the services in the following order:
-#     * fail2ban
-#     * iptables
+#   Starts the services in the following order:
 #     * ipset
+#     * iptables
+#     * fail2ban
 #
 # OPTIONS:
 #   -d | --dry-run
@@ -30,6 +30,8 @@
 #      Run help function and exit
 #   -v | --verbose
 #      Output each line of the script after validations are parsed
+#   -y | --yes
+#      *Required*
 #
 # AUTHOR: Jason (@iDoMeteor)
 #===============================================================================
@@ -40,11 +42,14 @@ IFS=$'\n\t'
 
 # Values
 DRY_RUN=''
+ORIGIN=`pwd`
+VERBOSE=0
+YES=0
 
 # Help function
 help () { 
   echo "Description:"
-  echo "  Stop IP Tables, IP Set and Fail2Ban"
+  echo "  Start IP Tables, IP Set and Fail2Ban"
   echo "Usage:"
   echo "  `basename $0` [-d] [-f] [-v]"
   echo "  `basename $0` [--dry-run] [--force] [--verbose]"
@@ -55,9 +60,6 @@ help () {
 if [ $# -eq 0 ] ; then
   help
 fi
-
-# Save origin
-ORIGIN=`pwd`
 
 # Parse command line arguments into variables
 while :
@@ -71,7 +73,11 @@ do
       help
     ;;
       -v | --verbose)
-      VERBOSE=true
+      VERBOSE=1
+      shift 1
+    ;;
+      -y | --yes)
+      YES=1
       shift 1
     ;;
       -*)
@@ -84,8 +90,16 @@ do
     esac
 done
 
+# Safety check
+if (( ! YES ))
+then
+  echo "Error: Must use -y or --yes to execute."
+  help
+fi
+
 # Check verbosity
-if [ -v VERBOSE ] ; then
+if (( VERBOSE ))
+then
   set -v
 fi
 

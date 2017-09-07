@@ -104,6 +104,6 @@ then
 fi
 
 # Execution commands
-$DRY_RUN service fail2ban restart
 $DRY_RUN service ipset restart
 $DRY_RUN service iptables restart
+$DRY_RUN service fail2ban restart
