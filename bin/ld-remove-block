@@ -63,8 +63,8 @@ IFS=$'\n\t'
 
 # Values
 DRY_RUN=''
-LIST_IPS='whitelist-ips'
-LIST_NETS='whitelist-net'
+LIST_IPS='blacklist-ips'
+LIST_NETS='blacklist-net'
 ORIGIN=`pwd`
 TARGET=''
 TARGET_LIST=''
