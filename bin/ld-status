@@ -81,7 +81,8 @@ do
 done
 
 # Check verbosity
-if (( VERBOSE )) ; then
+if (( VERBOSE ))
+then
   set -v
 fi
 
