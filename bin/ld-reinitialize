@@ -200,24 +200,31 @@ then
   $DRY_RUN ld-export
 fi
 
-# Stop services
-$DRY_RUN pidof fail2ban && $DRY_RUN service fail2ban stop
-$DRY_RUN pidof iptables && $DRY_RUN service iptables stop
-$DRY_RUN pidof ipset && $DRY_RUN service ipset stop
+# Flush nat, mangle, all chains
+$DRY_RUN iptables -F
+# Delete non-default chains
+$DRY_RUN iptables -X
 
-# Kill services if necessary
-$DRY_RUN pidof fail2ban && $DRY_RUN pidof fail2ban | $DRY_RUN xargs kill -9
-$DRY_RUN pidof iptables && $DRY_RUN pidof iptables | $DRY_RUN xargs kill -9
-$DRY_RUN pidof ipset && $DRY_RUN pidof ipset | $DRY_RUN xargs kill -9
+# Clear IP set
+$DRY_RUN ipset flush
+$DRY_RUN ipset x
+
+# Save empty sets
+$DRY_RUN ld-save -y
+
+# Stop services
+$DRY_RUN service fail2ban stop &
+$DRY_RUN service iptables stop &
+$DRY_RUN service ipset stop &
 
 ## Manipulate system daemons!!
 if (( ! SILENT )) ; then echo; fi
 case $DISTRO in
   "Amazon Linux"|"CentOS")
-    lockdown_daemons_srvchkcnf
+    lockdown_daemons_srvchkcnf $DRY_RUN
   ;;
   "Fedora"|"RHEL"|"Ubuntu")
-    lockdown_daemons_systemctl
+    lockdown_daemons_systemctl $DRY_RUN
   ;;
   *)  # No more options
     echo "Unsupported distro, exiting."
@@ -238,10 +245,10 @@ then
 fi
 if (( ! SILENT )) ; then echo; fi
 
-## Initialize ipset
-# Clear IP set
-$DRY_RUN ipset flush
-$DRY_RUN ipset x
+# Start services
+$DRY_RUN service fail2ban start && echo
+$DRY_RUN service iptables start && echo
+$DRY_RUN service ipset start && echo
 
 # Process IP Set pre-process rules
 if [ -f "$SRCDIR/pre-process/ipset.rules" ]
@@ -262,7 +269,7 @@ $DRY_RUN ipset create blacklist-countries hash:net
 $DRY_RUN ipset create whitelist-countries hash:net
 
 # Load list data into sets
-$DRY_RUN $location_bin/ld-load-lists
+$DRY_RUN $location_bin/ld-load-lists -y
 
 # Process IP Set post-process rules
 if [ -f "$SRCDIR/post-process/ipset.rules" ]
@@ -272,18 +279,6 @@ elif (( ! SILENT ))
 then
   echo "Rules file $1 not found, skipping"
 fi
-
-## Initialize iptables
-# Flush nat, mangle, all chains
-$DRY_RUN iptables -t nat -F
-$DRY_RUN iptables -t mangle -F
-$DRY_RUN iptables -F
-# Delete non-default chains
-$DRY_RUN iptables -X
-# Set default policy to drop
-$DRY_RUN iptables -P INPUT DROP
-$DRY_RUN iptables -P FORWARD DROP
-$DRY_RUN iptables -P OUTPUT ACCEPT
 
 # Process IP Tables pre-process rules
 if [ -f "$SRCDIR/pre-process/iptables.rules" ]
@@ -298,19 +293,18 @@ fi
 $DRY_RUN iptables -I INPUT 1 -m conntrack --ctstate INVALID -j DROP
 # Allow all to/from loopback (lo)
 $DRY_RUN iptables -I INPUT 2 -i lo -j ACCEPT
-$DRY_RUN iptables -I OUTPUT 1 -i lo -j ACCEPT
 # Allow established & related incoming, for outgoing 
 # connections initiated from server
 $DRY_RUN iptables -I INPUT 3 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 # Create set matching rules
-$DRY_RUN iptables -I INPUT 4 -m set --match-set whitelist-ips -J ACCEPT
-$DRY_RUN iptables -I INPUT 5 -m set --match-set blacklist-ips -J DROP
-$DRY_RUN iptables -I INPUT 6 -m set --match-set whitelist-net -J ACCEPT
-$DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net -J DROP
-$DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries -J ACCEPT
-$DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries -J DROP
+$DRY_RUN iptables -I INPUT 4 -m set --match-set whitelist-ips src -j ACCEPT
+$DRY_RUN iptables -I INPUT 5 -m set --match-set blacklist-ips src -j DROP
+$DRY_RUN iptables -I INPUT 6 -m set --match-set whitelist-net src -j ACCEPT
+$DRY_RUN iptables -I INPUT 7 -m set --match-set blacklist-net src -j DROP
+$DRY_RUN iptables -I INPUT 8 -m set --match-set whitelist-countries src -j ACCEPT
+$DRY_RUN iptables -I INPUT 9 -m set --match-set blacklist-countries src -j DROP
 # Create global inlets
-for port in ${PORTS[@]}
+for port in ${ports[@]}
 do
   # This rule avoids connection tracking in favor of optimal processing 
   # speed which is the same reason we allow all outgoing traffic rather 
@@ -320,6 +314,11 @@ do
   # If you were to use a drop target in the default outgoing policy, then
   # you would want to add an established/related output rule here as well.
 done
+
+# Set default policy to drop
+$DRY_RUN iptables -P INPUT DROP
+$DRY_RUN iptables -P FORWARD DROP
+$DRY_RUN iptables -P OUTPUT ACCEPT
 
 # Process IP Tables post-process rules
 if [ -f "$SRCDIR/post-process/iptables.rules" ]
@@ -334,7 +333,6 @@ fi
 # Installation complete, present results to user if applicable
 if [ $DRY_RUN ]
 then
-  # Dry run notification
   echo
   echo "*Notice*"
   echo "You have run ld-install in dry run mode."
@@ -344,8 +342,10 @@ then
   echo "Lockdown has *not* been installed and your system has not been altered!"
 elif (( ! SILENT ))
 then
-  # Checking installation
-  installation_report
+  echo "You should check /etc/crontab and make sure Lockdown daily list updater is present,"
+  echo "and looks similar to the following:"
+  echo "17 1 * * * root /usr/sbin/ld-cron-job 2>&1 # Lockdown daily list updater"
+  ld-test && echo "Re-initialization of Lockdown complete!"
 fi
 
 ## w00t!

@@ -210,7 +210,8 @@ fi
 if [ ! -d /etc/fail2ban ] && \
    [ ! -f /etc/ipset.conf ] && \
    [ ! -d /etc/lockdown ] && \
-   [ ! -d /etc/sysconfig/ip?tables.* ]
+   [ ! -d /etc/sysconfig/iptables.* ]
+   [ ! -d /etc/sysconfig/ip6tables.* ]
 then
   BACKUP=0
 fi
@@ -425,6 +426,11 @@ then
 fi
 if (( ! SILENT )) ; then echo; fi
 
+# Flush nat, mangle, all chains
+$DRY_RUN iptables -F
+# Delete non-default chains
+$DRY_RUN iptables -X
+
 # Clear IP set
 $DRY_RUN service iptables stop && echo
 $DRY_RUN ipset -F
@@ -460,13 +466,6 @@ elif (( ! SILENT ))
 then
   echo "Rules file $1 not found, skipping"
 fi
-
-# Flush nat, mangle, all chains
-#$DRY_RUN iptables -t nat -F # Cloud stuff might rely on this! :x
-#$DRY_RUN iptables -t mangle -F # Cloud stuff might rely on this! :x
-$DRY_RUN iptables -F
-# Delete non-default chains
-$DRY_RUN iptables -X
 
 # Process IP Tables pre-process rules
 if [ -f "$SRCDIR/pre-process/iptables.rules" ]
