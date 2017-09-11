@@ -60,19 +60,41 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Load configuration file
+SRCDIR="/etc/lockdown"
+if [ ! -d $SRCDIR ]
+then
+  echo "Lockdown configuration directory /etc/lockdown not found, cannot continue."
+  exit 1
+fi
+if [ ! -f $SRCDIR/conf/lockdown-default.conf ] && [ ! -f $SRCDIR/conf/lockdown.conf ]
+then
+  echo "No Lockdown configuration file found, cannot continue."
+  exit 1
+fi
+if [ -f $SRCDIR/conf/lockdown-default.conf ]
+then
+  . $SRCDIR/conf/lockdown-default.conf
+fi
+if [ -f $SRCDIR/conf/lockdown.conf ]
+then
+  . $SRCDIR/conf/lockdown.conf
+fi
+
 # Instantiate variables
 BACKUP=1
 CONFIG='/etc/lockdown/conf/lockdown.conf'
 DATE=`date +%Y%m%d%H%M%S`
 DISTRO=''
 DOWNLOAD=1
-DRY_RUN=0
+DRY_RUN=''
 EPEL='epel-release'
 FAIL2BAN='fail2ban'
 GAMIN='gamin'
 IPSET='ipset'
 IPTABLES='iptables'
 OUT=''
+PACKAGE_MANAGER='yum'
 PORTS=$ports
 SILENT=0
 VERBOSE=0
@@ -88,13 +110,12 @@ help () {
   exit 0
 }
 
-# Check for arguments or provide help
-if [ $# -eq 0 ] ; then
-  help
-fi
-
 # Save origin
 ORIGIN=`pwd`
+
+# Load libraries
+. /usr/local/share/lockdown/lib/determine_linux_distro
+. /usr/local/share/lockdown/lib/lockdown_installation_report
 
 # Parse command line arguments into variables
 while :
@@ -146,9 +167,6 @@ fi
 if [ -f "$CONFIG" ]
 then
   . "$CONFIG"
-else
-  echo "Lockdown custom configuration file $CONFIG not found, cannot continue."
-  exit 1
 fi
 
 # Ensure distro is supported
@@ -221,10 +239,10 @@ $DRY_RUN service ipset stop &
 if (( ! SILENT )) ; then echo; fi
 case $DISTRO in
   "Amazon Linux"|"CentOS")
-    lockdown_daemons_srvchkcnf $DRY_RUN
+    /usr/local/share/lockdown/lib/lockdown_daemons_srvchkcnf "$DISTRO" "$DRY_RUN"
   ;;
   "Fedora"|"RHEL"|"Ubuntu")
-    lockdown_daemons_systemctl $DRY_RUN
+    lockdown_daemons_systemctl "$DISTRO" "$DRY_RUN"
   ;;
   *)  # No more options
     echo "Unsupported distro, exiting."
@@ -233,6 +251,8 @@ case $DISTRO in
 esac
 if (( ! SILENT )) ; then echo; fi
 
+# Reinitialize all lockdown related files using /usr/share/lockdown
+. /usr/share/local/lockdown/lib/lockdown_reinit
 
 # Download latest lists
 if (( DOWNLOAD ))
@@ -345,6 +365,7 @@ then
   echo "You should check /etc/crontab and make sure Lockdown daily list updater is present,"
   echo "and looks similar to the following:"
   echo "17 1 * * * root /usr/sbin/ld-cron-job 2>&1 # Lockdown daily list updater"
+  lockdown_installation_report
   ld-test && echo "Re-initialization of Lockdown complete!"
 fi
 
