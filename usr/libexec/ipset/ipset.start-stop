@@ -9,10 +9,10 @@ IPSET=ipset
 if [ -f /usr/sbin/${IPSET} ]
 then
   IPSET_BIN=/usr/sbin/${IPSET}
-  IPSET_DATA=/etc/${IPSET}
+  IPSET_DATA=/etc/${IPSET}.conf
 else
   IPSET_BIN=/sbin/${IPSET}
-  IPSET_DATA=/etc/${IPSET}
+  IPSET_DATA=/etc/${IPSET}.conf
 fi
 
 IPTABLES_CONFIG=/etc/sysconfig/iptables-config
