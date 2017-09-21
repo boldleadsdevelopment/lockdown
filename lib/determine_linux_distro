@@ -8,7 +8,7 @@ determine_distro () {
       DISTRO='Amazon Linux'
     elif [[ `cut -d= -f2 /etc/os-release` =~ 'CentOS' ]]
     then
-      DISTRO='CentOS'
+      DISTRO='CentOS7'
     elif [[ `cut -d= -f2 /etc/os-release` =~ 'Fedora' ]]
     then
       DISTRO='Fedora'
@@ -28,7 +28,7 @@ determine_distro () {
   then
     if [[ `cut -d= -f2 /etc/system-release` =~ 'CentOS' ]]
     then
-      DISTRO='CentOS'
+      DISTRO='CentOS6'
     fi
   fi
 }

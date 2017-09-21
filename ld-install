@@ -283,7 +283,7 @@ $DRY_RUN lockdown_init $YES
 ##
 if (( ! SILENT )) ; then echo; fi
 case $DISTRO in
-  "Amazon Linux"|"CentOS")
+  "Amazon Linux"|"CentOS6")
     #   Amazon Linux, CentOS
     #     service x start|stop|etc
     #     chkconfig x on|off
@@ -345,7 +345,7 @@ case $DISTRO in
     fi
     if (( ! SILENT )) ; then echo "Service configuration completed successfully!"; fi
   ;;
-  "Fedora"|"RHEL"|"Ubuntu")
+  "CentOS7"|"Fedora"|"RHEL"|"Ubuntu")
     #   Fedora, RHEL, Ubuntu
     #     systemctl start|stop|etc x
     #     systemctl enable|disable x
