@@ -195,12 +195,12 @@ do
   dir="$SRCDIR/$list"
   if [ -d $dir ] && [ "$(ls -A $dir)" ]
   then
-    for file in "$dir/*"
+    for file in $dir/*
     do
       if (( ! SILENT )) ; then echo "Adding entries from $file to $list"; fi
       while read value
       do 
-        if [ value ] && [[ ! $value =~ ^# ]] && [ -z `ipcalc -c $TARGET` ]
+        if [ value ] && [[ ! $value =~ "^#" ]] && [ -z `ipcalc -c $value` ]
         then
           $DRY_RUN ipset -! add $list $value
         fi
