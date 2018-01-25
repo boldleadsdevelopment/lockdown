@@ -48,11 +48,11 @@ lockdown_init () {
     then
       /bin/rm -r /etc/lockdown/lists
     fi
-    /bin/cp -r conf /etc/lockdown
-    /bin/cp -r lists /etc/lockdown
-    /bin/cp -r post-process /etc/lockdown
-    /bin/cp -r pre-process /etc/lockdown
-    /bin/cp -r etc/ipset.conf /etc/
+    /bin/cp -r $SRCDIR/conf /etc/lockdown
+    /bin/cp -r $SRCDIR/lists /etc/lockdown
+    /bin/cp -r $SRCDIR/post-process /etc/lockdown
+    /bin/cp -r $SRCDIR/pre-process /etc/lockdown
+    /bin/cp -r $SRCDIR/etc/ipset.conf /etc/
     chown root:root /etc/ipset.conf
   else
     echo "Could not create or access /etc/lockdown, installation cannot continue"
@@ -61,13 +61,13 @@ lockdown_init () {
   if [ -d /etc/systemd ]
   then
     echo "Upstart discovered, installing service units"
-    /bin/cp -r usr/* /usr/
+    /bin/cp -r $SRCDIR/usr/* /usr/
     chown -R root:root /usr/libexec/ip* /usr/lib/systemd/system/ip*
     chmod u+x /usr/libexec/iptables/* /usr/libexec/ipset/ipset.start-stop /usr/lib/systemd/system/ip*
   elif [ -d /etc/init.d ]
   then
     echo "SysV init discovered, installing init files"
-    /bin/cp etc/init.d/ipset /etc/init.d/
+    /bin/cp $SRCDIR/etc/init.d/ipset /etc/init.d/
     chown -R root:root /etc/lockdown /etc/init.d/ipset
     chmod u+x /etc/init.d/ipset
   else
@@ -80,7 +80,7 @@ lockdown_init () {
   fi
   if [ -d /usr/local/share/lockdown ]
   then
-    cp -r . /usr/local/share/lockdown/
+    /bin/cp -r $SRCDIR/* /usr/local/share/lockdown/
   else
     echo "Could not create or access /usr/local/share/lockdown, installation cannot continue"
     exit 1

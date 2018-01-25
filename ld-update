@@ -251,7 +251,7 @@ if [ ! -f /usr/lib64/libgamin-1.so.0 ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $GAMIN
 fi
-$DRY_RUN lockdown_init $YES
+$DRY_RUN lockdown_reinit $YES
 
 ## Manipulate system daemons!!
 # This is done in the following order for maximum safety
@@ -324,12 +324,13 @@ case $DISTRO in
     fi
     if (( ! SILENT )) ; then echo "Service configuration completed successfully!"; fi
   ;;
-  "Fedora"|"RHEL"|"Ubuntu")
+  "Amazon Linux 2"|"Fedora"|"RHEL"|"Ubuntu")
     #   Fedora, RHEL, Ubuntu
     #     systemctl start|stop|etc x
     #     systemctl enable|disable x
     # Begin starting services
     if (( ! SILENT )) ; then echo "Starting systemctl starts for $DISTRO"; fi
+    $DRY_RUN systemctl daemon-reload
     $DRY_RUN systemctl start fail2ban
     if [ 0 -ne $? ] && [ -z $DRY_RUN ]
     then
@@ -510,73 +511,3 @@ fi
 
 ## w00t!
 exit 0
-
-  # Ensure all relevant directories exist, copy new executables and new default
-  # configuration file into place, and copy everything to /usr/share/lockdown
-  if [ ! -d /usr/sbin ]
-  then
-    mkdir -p /usr/sbin
-  fi
-  if [ -d /usr/sbin ]
-  then
-    chmod u+x bin/*
-    cp bin/* /usr/sbin
-  else
-    echo "Could not create or access /usr/sbin, installation cannot continue"
-    exit 1
-  fi
-  if [ ! -d /etc/lockdown ]
-  then
-    mkdir -p /etc/lockdown
-  fi
-  if [ ! -d /etc/lockdown/archives ]
-  then
-    mkdir -p /etc/lockdown/archives
-  fi
-  if [ ! -d /etc/lockdown/blacklist-ips ]
-  then
-    mkdir -p /etc/lockdown/blacklist-ips
-    touch /etc/lockdown/blacklist-ips/entries.txt
-  fi
-  if [ ! -d /etc/lockdown/blacklist-net ]
-  then
-    mkdir -p /etc/lockdown/blacklist-net
-    touch /etc/lockdown/blacklist-net/entries.txt
-  fi
-  if [ ! -d /etc/lockdown/whitelist-ips ]
-  then
-    mkdir -p /etc/lockdown/whitelist-ips
-    touch /etc/lockdown/whitelist-ips/entries.txt
-  fi
-  if [ ! -d /etc/lockdown/whitelist-net ]
-  then
-    mkdir -p /etc/lockdown/whitelist-net
-    touch /etc/lockdown/whitelist-net/entries.txt
-  fi
-  if [ -d /etc/lockdown ]
-  then
-    /bin/cp -r lists /etc/lockdown
-    /bin/cp -r conf /etc/lockdown
-    /bin/cp -r lists /etc/lockdown
-    /bin/cp -r post-process /etc/lockdown
-    /bin/cp -r pre-process /etc/lockdown
-    /bin/cp -r etc/ipset.conf /etc/
-    chown root:root /etc/ipset.conf
-    /bin/cp -r etc/init.d/ipset /etc/init.d
-    chown -R root:root /etc/lockdown /etc/init.d/ipset
-    chmod u+x /etc/init.d/ipset
-  else
-    echo "Could not create or access /etc/lockdown, installation cannot continue"
-    exit 1
-  fi
-  if [ ! -d /usr/local/share/lockdown ]
-  then
-    mkdir -p /usr/local/share/lockdown
-  fi
-  if [ -d /usr/local/share/lockdown ]
-  then
-    cp -r . /usr/local/share/lockdown/
-  else
-    echo "Could not create or access /usr/local/share/lockdown, installation cannot continue"
-    exit 1
-  fi

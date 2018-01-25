@@ -203,7 +203,6 @@ start() {
     # Do not start if there is no config file.
     if [ ! -f "$IPTABLES_DATA" ]; then
 	echo -n $"${IPTABLES}: No config file."; warning; echo
-	return 6
     fi
 
     # check if ipv6 module load is deactivated

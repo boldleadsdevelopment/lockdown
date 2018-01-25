@@ -3,3 +3,4 @@
 *.tar.gz
 *~
 conf/lockdown.conf
+./fail2ban*
