@@ -211,7 +211,7 @@ fi
 if [ ! -d /etc/fail2ban ] && \
    [ ! -f /etc/ipset.conf ] && \
    [ ! -d /etc/lockdown ] && \
-   [ ! -d /etc/sysconfig/ip?tables.* ]
+   [ ! -f /etc/sysconfig/ip?tables.* ]
 then
   BACKUP=0
 fi

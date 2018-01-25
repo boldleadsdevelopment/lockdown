@@ -50,11 +50,6 @@ lockdown_reinit () {
   fi
   if [ -d /etc/lockdown ]
   then
-    /bin/cp -r lists /etc/lockdown
-    if [ -d /etc/lockdown/lists ]
-    then
-      /bin/rm -r /etc/lockdown/lists
-    fi
     /bin/cp -r $SRCDIR/conf /etc/lockdown
     /bin/cp -r $SRCDIR/lists /etc/lockdown
     /bin/cp -r $SRCDIR/post-process /etc/lockdown
@@ -64,6 +59,14 @@ lockdown_reinit () {
   else
     echo "Could not create or access /etc/lockdown, re-initilization cannot continue"
     exit 1
+  fi
+  if [ -d /etc/sysconfig ]
+  then
+      /bin/cp -r $SRCDIR/etc/sysconfig/* /etc/sysconfig/
+      chown root:root /etc/sysconfig/iptable*
+  else
+      echo "Could not install iptables configuration files, cannot continue"
+      exit 1
   fi
   if [ -d /etc/systemd ]
   then
@@ -88,6 +91,8 @@ lockdown_reinit () {
   if [ -d /usr/local/share/lockdown ]
   then
     /bin/cp -r $SRCDIR/* /usr/local/share/lockdown/
+    chmod u+x /usr/local/share/lockdown/bin/*
+    chmod u+x /usr/local/share/lockdown/lib/*
   else
     echo "Could not create or access /usr/local/share/lockdown, installation cannot continue"
     exit 1

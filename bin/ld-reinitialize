@@ -242,7 +242,7 @@ case $DISTRO in
     /usr/local/share/lockdown/lib/lockdown_daemons_srvchkcnf "$DISTRO" "$DRY_RUN"
   ;;
   "Amazon Linux 2"|"Fedora"|"RHEL"|"Ubuntu")
-    lockdown_daemons_systemctl "$DISTRO" "$DRY_RUN"
+    /usr/local/share/lockdown/lib/lockdown_daemons_systemctl "$DISTRO" "$DRY_RUN"
   ;;
   *)  # No more options
     echo "Unsupported distro, exiting."
