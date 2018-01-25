@@ -1,4 +1,5 @@
-*.sw*
 *.bak
+*.sw*
+*.tar.gz
 *~
 conf/lockdown.conf

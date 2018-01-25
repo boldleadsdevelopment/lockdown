@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fedora, RHEL, Ubuntu
+# Amazon Linux 2, Fedora, RHEL, Ubuntu
 #   systemctl start|stop|etc x
 #   systemctl enable|disable x
 # Begin starting services

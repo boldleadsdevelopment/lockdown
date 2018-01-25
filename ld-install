@@ -244,7 +244,7 @@ then
 fi
 
 ## Begin Installations!!
-if [ 'yum' = $PACKAGE_MANAGER ]
+if [ 'yum' = $PACKAGE_MANAGER ] && [ 'Amazon Linux 2' != $DISTRO ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $EPEL
 fi
@@ -266,7 +266,17 @@ then
 fi
 if [ ! -f /usr/bin/fail2ban-server ]
 then
-  $DRY_RUN $PACKAGE_MANAGER install $YES $FAIL2BAN
+  if [ 'Amazon Linux 2' = $DISTRO ]
+  then
+    wget https://github.com/fail2ban/fail2ban/archive/0.9.4.tar.gz
+    mv 0.9.4.tar.gz fail2ban-0.9.4.tar.gz
+    tar xzf fail2ban-0.9.4.tar.gz 
+    cd fail2ban-0.9.4/
+    ./setup.py build 
+    ./setup.py install
+  else
+    $DRY_RUN $PACKAGE_MANAGER install $YES $FAIL2BAN
+  fi
 fi
 if [ ! -f /usr/lib64/libgamin-1.so.0 ]
 then
@@ -345,7 +355,7 @@ case $DISTRO in
     fi
     if (( ! SILENT )) ; then echo "Service configuration completed successfully!"; fi
   ;;
-  "CentOS7"|"Fedora"|"RHEL"|"Ubuntu")
+  "Amazon Linux 2"|"CentOS7"|"Fedora"|"RHEL"|"Ubuntu")
     #   Fedora, RHEL, Ubuntu
     #     systemctl start|stop|etc x
     #     systemctl enable|disable x

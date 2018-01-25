@@ -3,7 +3,10 @@
 determine_distro () {
   if [ -f /etc/os-release ]
   then
-    if [[ `cut -d= -f2 /etc/os-release` =~ 'Amazon Linux' ]]
+    if [[ `cut -d= -f2 /etc/os-release` =~ 'Amazon Linux 2' ]]
+    then
+      DISTRO='Amazon Linux 2'
+    elif [[ `cut -d= -f2 /etc/os-release` =~ 'Amazon Linux' ]]
     then
       DISTRO='Amazon Linux'
     elif [[ `cut -d= -f2 /etc/os-release` =~ 'CentOS' ]]

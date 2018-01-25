@@ -241,7 +241,7 @@ case $DISTRO in
   "Amazon Linux"|"CentOS")
     /usr/local/share/lockdown/lib/lockdown_daemons_srvchkcnf "$DISTRO" "$DRY_RUN"
   ;;
-  "Fedora"|"RHEL"|"Ubuntu")
+  "Amazon Linux 2"|"Fedora"|"RHEL"|"Ubuntu")
     lockdown_daemons_systemctl "$DISTRO" "$DRY_RUN"
   ;;
   *)  # No more options
