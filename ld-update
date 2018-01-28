@@ -114,7 +114,7 @@ help () {
 
 # Load libraries
 . lib/determine_linux_distro
-. lib/lockdown_init
+. lib/lockdown_reinit
 . lib/lockdown_installation_report
 
 # Parse command line arguments into variables
@@ -231,7 +231,9 @@ then
 fi
 
 ## Begin Installations!!
-if [ 'yum' = $PACKAGE_MANAGER ] || [ 'dnf' = $PACKAGE_MANAGER ]
+if [ 'Amazon Linux 2' != $DISTRO ] \
+  && [ 'yum' = $PACKAGE_MANAGER ] \
+  || [ 'dnf' = $PACKAGE_MANAGER ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $EPEL
 fi
@@ -239,13 +241,31 @@ if [ ! -f /usr/bin/iptables ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $IPTABLES
 fi
+if [ 'dnf' = $PACKAGE_MANAGER ]
+then
+  $DRY_RUN $PACKAGE_MANAGER install $YES iptables-services iptables-utils
+fi
 if [ ! -f /usr/sbin/ipset ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $IPSET
 fi
+if [ 'dnf' = $PACKAGE_MANAGER ]
+then
+  $DRY_RUN $PACKAGE_MANAGER install $YES ipset-service
+fi
 if [ ! -f /usr/bin/fail2ban-server ]
 then
-  $DRY_RUN $PACKAGE_MANAGER install $YES $FAIL2BAN
+  if [ 'Amazon Linux 2' = $DISTRO ]
+  then
+    wget https://github.com/fail2ban/fail2ban/archive/0.9.4.tar.gz
+    mv 0.9.4.tar.gz fail2ban-0.9.4.tar.gz
+    tar xzf fail2ban-0.9.4.tar.gz 
+    cd fail2ban-0.9.4/
+    ./setup.py build 
+    ./setup.py install
+  else
+    $DRY_RUN $PACKAGE_MANAGER install $YES $FAIL2BAN
+  fi
 fi
 if [ ! -f /usr/lib64/libgamin-1.so.0 ]
 then
@@ -365,17 +385,20 @@ case $DISTRO in
     # Begin enabling services
     if (( ! SILENT )) ; then echo "Enabling services for $DISTRO"; fi
     $DRY_RUN systemctl enable fail2ban
-    if (( `systemctl is-enabled fail2ban` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled fail2ban)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
         echo "Failed to enable fail2ban, exiting."
     fi
     $DRY_RUN systemctl enable ipset
-    if (( `systemctl is-enabled ipset` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled ipset)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
         echo "Failed to enable fail2ban, exiting."
     fi
     $DRY_RUN systemctl enable iptables
-    if (( `systemctl is-enabled iptables` )) && [ -z $DRY_RUN ]
+    test=$(systemctl is-enabled iptables)
+    if [ 'enabled' != "$test" ] && [ -z $DRY_RUN ]
     then
         echo "Failed to enable fail2ban, exiting."
     fi
@@ -498,11 +521,11 @@ then
   # Dry run notification
   echo
   echo "*Notice*"
-  echo "You have run ld-install in dry run mode."
+  echo "You have run ld-update in dry run mode."
   echo "If you run the same command line without -d or --dry-run again,"
   echo "the commands above will be executed and permanent changes will be made."
   echo
-  echo "Lockdown has *not* been installed and your system has not been altered!"
+  echo "Nothing has *not* been updated and your system has not been altered!"
 elif (( ! SILENT ))
 then
   # Checking installation

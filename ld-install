@@ -244,7 +244,9 @@ then
 fi
 
 ## Begin Installations!!
-if [ 'yum' = $PACKAGE_MANAGER ] && [ 'Amazon Linux 2' != $DISTRO ]
+if [ 'Amazon Linux 2' != $DISTRO ] \
+  && [ 'yum' = $PACKAGE_MANAGER ] \
+  || [ 'dnf' = $PACKAGE_MANAGER ]
 then
   $DRY_RUN $PACKAGE_MANAGER install $YES $EPEL
 fi
