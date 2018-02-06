@@ -113,7 +113,7 @@ load_country_data () {
     do 
       if [[ ! $value =~ ^#*$ ]] && [ -z `ipcalc -c $value` ]
       then
-        $DRY_RUN ipset test $list-countries $value > /dev/null 2>&1 || $DRY_RUN ipset -! add $list-countries $value
+        $DRY_RUN nice -n 10 ipset test $list-countries $value > /dev/null 2>&1 || $DRY_RUN nice -n 10 ipset -! add $list-countries $value
       fi
     done < "$location_lists/countries/$country_code.zone"
   else
@@ -202,7 +202,7 @@ do
       do 
         if [ value ] && [[ ! $value =~ "^#" ]] && [ -z `ipcalc -c $value` ]
         then
-          $DRY_RUN ipset -! add $list $value
+          $DRY_RUN nice -n 10 ipset -! add $list $value
         fi
       done < $file
     done
@@ -246,7 +246,7 @@ do
         # Ugly Spamhaus hack cuz it's 03:43
         value=`cut -d\  -f1 <<< $value`
       fi
-      $DRY_RUN ipcalc -c $value && $DRY_RUN ipset -! add $list $value
+      $DRY_RUN ipcalc -c $value && $DRY_RUN nice -n 10 ipset -! add $list $value
     fi
   done < $file
 done
