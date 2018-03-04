@@ -468,7 +468,7 @@ $DRY_RUN ipset create blacklist-countries hash:net
 $DRY_RUN ipset create whitelist-countries hash:net
 
 # Load list data into sets
-$DRY_RUN $location_bin/ld-load-lists -y
+$DRY_RUN $SRCDIR/bin/ld-load-lists -y
 
 # Process IP Set post-process rules
 if [ -f "$SRCDIR/post-process/ipset.rules" ]
