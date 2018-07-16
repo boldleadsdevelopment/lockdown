@@ -178,7 +178,12 @@ fi
 # Update lists
 if (( DOWNLOAD ))
 then
-  $DRY_RUN $location_bin/ld-update-lists -f
+  if [ -f "$location_bin/ld-update-lists" ]
+  then
+    $DRY_RUN "$location_bin/ld-update-lists" -f
+  elif [ -f "/root/lockdown/ld-update-lists" ]
+    $DRY_RUN /root/lockdown/ld-update-lists -f
+  fi
 fi
 
 # Clear or create related IP sets

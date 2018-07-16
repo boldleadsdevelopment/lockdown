@@ -6,6 +6,7 @@ Home-page: http://www.fail2ban.org
 Author: Cyril Jaquier & Fail2Ban Contributors
 Author-email: cyril.jaquier@fail2ban.org
 License: GPL
+Description-Content-Type: UNKNOWN
 Description: 
         Fail2Ban scans log files like /var/log/pwdfail or
         /var/log/apache/error_log and bans IP that makes
