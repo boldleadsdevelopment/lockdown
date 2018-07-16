@@ -112,9 +112,9 @@ help () {
 }
 
 # Load libraries
-. lib/determine_linux_distro
-. lib/lockdown_init
-. lib/lockdown_installation_report
+. "$SRCDIR/lib/determine_linux_distro"
+. "$SRCDIR/lib/lockdown_init"
+. "$SRCDIR/lib/lockdown_installation_report"
 
 # Parse command line arguments into variables
 while :

@@ -270,7 +270,13 @@ done
 # Save running configuration
 if (( SAVE ))
 then
-  /usr/sbin/ld-save -y
+  if [ -f "$location_bin/ld-save" ]
+  then
+    $DRY_RUN "$location_bin/ld-save" -y
+  elif [ -f /root/lockdown/ld-save ]
+  then
+    $DRY_RUN /root/lockdown/ld-save -y
+  fi
 fi
 
 exit 0
