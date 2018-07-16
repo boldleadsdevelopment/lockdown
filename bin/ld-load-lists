@@ -258,14 +258,20 @@ do
 done
 
 # Load country data
-for country_code in ${countries_bad[@]}
-do
-  load_country_data blacklist $country_code $DRY_RUN
-done
-for country_code in ${countries_good[@]}
-do
-  load_country_data whitelist $country_code $DRY_RUN
-done
+if [ 0 -eq ${#countries_bad[@]} ]
+then
+  for country_code in ${countries_bad[@]}
+  do
+    load_country_data blacklist $country_code $DRY_RUN
+  done
+fi
+if [ 0 -eq ${#countries_good[@]} ]
+then
+  for country_code in ${countries_good[@]}
+  do
+    load_country_data whitelist $country_code $DRY_RUN
+  done
+fi
 
 # Save running configuration
 if (( SAVE ))
