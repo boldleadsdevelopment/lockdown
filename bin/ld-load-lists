@@ -181,7 +181,8 @@ then
   if [ -f "$location_bin/ld-update-lists" ]
   then
     $DRY_RUN "$location_bin/ld-update-lists" -f
-  elif [ -f "/root/lockdown/ld-update-lists" ]
+  elif [ -f /root/lockdown/ld-update-lists ]
+  then
     $DRY_RUN /root/lockdown/ld-update-lists -f
   fi
 fi
