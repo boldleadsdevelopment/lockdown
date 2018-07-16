@@ -8,7 +8,7 @@ lockdown_init () {
   if [ -d /usr/sbin ]
   then
     chmod u+x bin/*
-    cp bin/* /usr/sbin
+    /bin/cp $SRCDIR/bin/* /usr/sbin
   else
     echo "Could not create or access /usr/sbin, installation cannot continue"
     exit 1

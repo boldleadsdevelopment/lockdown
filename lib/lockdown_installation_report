@@ -46,9 +46,9 @@ installation_report () {
   fi
   if [ -f /usr/sbin/ld-allow ]
   then
-    echo "/etc/lockdown found"
+    echo "/usr/sbin/ld-* found"
   else
-    "Could not find Lockdown configuration files, please report on Github issues"
+    "Could not find Lockdown executable files, please report on Github issues"
     exit 1
   fi
 
