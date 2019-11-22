@@ -187,7 +187,7 @@ then
   echo "existence on your systems."
   echo
   echo "You are about to perform this installation on `hostname` with"
-  echo "IP `curl -s whatip.gzo.com`."
+  echo "IP `curl -s ipinfo.io/ip`."
   echo
   read -p "Proceed with installation and configuration of Lockdown and all related services? [y/N] " -n 1 -r REPLY
   if [[ $REPLY =~ ^[Yy]$ ]] ; then
